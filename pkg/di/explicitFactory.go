@@ -41,14 +41,12 @@ func NewFactory(factoryFunc ServiceFactoryFunc) ServiceFactory {
 	return NewExplicitFactory(factoryFunc, []reflect.Type{}, "<Factory>")
 }
 
-// NewStructFactory creates a new service factory from the given struct type.
+// NewStructFactoryForType creates a new service factory from the given struct type.
 // parameters:
 // 	structType - the struct type to create the service from
 // returns:
 // 	the new service factory
-func NewStructFactory(structure interface{}) (ServiceFactory, error) {
-	structType := reflect.TypeOf(structure)
-
+func NewStructFactoryForType(structType reflect.Type) (ServiceFactory, error) {
 	if structType == nil || structType.Kind() != reflect.Struct {
 		return nil, ErrInvalidStructType
 	}

@@ -3,6 +3,8 @@ package di
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type testServiceInterface interface{}
@@ -27,21 +29,13 @@ func TestNewDescriptorForType(t *testing.T) {
 		&factory)
 
 	// Then
-	if descriptor == nil {
-		t.Error("descriptor is nil")
-	}
+	assert.NotNil(t, descriptor)
 	// Then
-	if descriptor.Lifetime() != Scoped {
-		t.Error("descriptor lifetime is not Scoped")
-	}
+	assert.Equal(t, Scoped, descriptor.Lifetime())
 	// Then
-	if descriptor.ServiceType().Name() != "testServiceInterface" {
-		t.Error("descriptor service type is not testServiceInterface but", descriptor.ServiceType().Name())
-	}
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
 	// Then
-	if descriptor.Factory() != &factory {
-		t.Error("descriptor factory is not &factory but", descriptor.Factory())
-	}
+	assert.Equal(t, &factory, descriptor.Factory())
 }
 
 func TestNewDescriptor(t *testing.T) {
@@ -51,21 +45,13 @@ func TestNewDescriptor(t *testing.T) {
 	descriptor := NewDescriptor[testServiceInterface](Scoped, &factory)
 
 	// Then
-	if descriptor == nil {
-		t.Error("descriptor is nil")
-	}
+	assert.NotNil(t, descriptor)
 	// Then
-	if descriptor.Lifetime() != Scoped {
-		t.Error("descriptor lifetime is not Scoped")
-	}
+	assert.Equal(t, Scoped, descriptor.Lifetime())
 	// Then
-	if descriptor.ServiceType().Name() != "testServiceInterface" {
-		t.Error("descriptor service type is not testServiceInterface but", descriptor.ServiceType().Name())
-	}
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
 	// Then
-	if descriptor.Factory() != &factory {
-		t.Error("descriptor factory is not &factory but", descriptor.Factory())
-	}
+	assert.Equal(t, &factory, descriptor.Factory())
 }
 
 func TestNewSingleton(t *testing.T) {
@@ -75,21 +61,13 @@ func TestNewSingleton(t *testing.T) {
 	descriptor := NewSingleton[testServiceInterface](&factory)
 
 	// Then
-	if descriptor == nil {
-		t.Error("descriptor is nil")
-	}
+	assert.NotNil(t, descriptor)
 	// Then
-	if descriptor.Lifetime() != Singleton {
-		t.Error("descriptor lifetime is not Singleton")
-	}
+	assert.Equal(t, Singleton, descriptor.Lifetime())
 	// Then
-	if descriptor.ServiceType().Name() != "testServiceInterface" {
-		t.Error("descriptor service type is not testServiceInterface but", descriptor.ServiceType().Name())
-	}
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
 	// Then
-	if descriptor.Factory() != &factory {
-		t.Error("descriptor factory is not &factory but", descriptor.Factory())
-	}
+	assert.Equal(t, &factory, descriptor.Factory())
 }
 
 func TestNewScoped(t *testing.T) {
@@ -99,21 +77,13 @@ func TestNewScoped(t *testing.T) {
 	descriptor := NewScoped[testServiceInterface](&factory)
 
 	// Then
-	if descriptor == nil {
-		t.Error("descriptor is nil")
-	}
+	assert.NotNil(t, descriptor)
 	// Then
-	if descriptor.Lifetime() != Scoped {
-		t.Error("descriptor lifetime is not Scoped")
-	}
+	assert.Equal(t, Scoped, descriptor.Lifetime())
 	// Then
-	if descriptor.ServiceType().Name() != "testServiceInterface" {
-		t.Error("descriptor service type is not testServiceInterface but", descriptor.ServiceType().Name())
-	}
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
 	// Then
-	if descriptor.Factory() != &factory {
-		t.Error("descriptor factory is not &factory but", descriptor.Factory())
-	}
+	assert.Equal(t, &factory, descriptor.Factory())
 }
 
 func TestNewTransient(t *testing.T) {
@@ -123,19 +93,11 @@ func TestNewTransient(t *testing.T) {
 	descriptor := NewTransient[testServiceInterface](&factory)
 
 	// Then
-	if descriptor == nil {
-		t.Error("descriptor is nil")
-	}
+	assert.NotNil(t, descriptor)
 	// Then
-	if descriptor.Lifetime() != Transient {
-		t.Error("descriptor lifetime is not Transient")
-	}
+	assert.Equal(t, Transient, descriptor.Lifetime())
 	// Then
-	if descriptor.ServiceType().Name() != "testServiceInterface" {
-		t.Error("descriptor service type is not testServiceInterface but", descriptor.ServiceType().Name())
-	}
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
 	// Then
-	if descriptor.Factory() != &factory {
-		t.Error("descriptor factory is not &factory but", descriptor.Factory())
-	}
+	assert.Equal(t, &factory, descriptor.Factory())
 }

@@ -10,7 +10,8 @@ if ($VerbosePreference) {
     $Command = $Command + " -v"
 }
 if ($Cover) {
-    $Command = $Command + " -covermode=count -coverprofile coverage.out"
+    $PackageList = go list ./...
+    $Command = $Command + " -covermode=count -coverprofile coverage.out `"$PackageList`""
 } else {
     $Command = $Command + " -covermode=count"
 }
