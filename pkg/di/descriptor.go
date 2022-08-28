@@ -30,14 +30,72 @@ func NewDescriptor[T any](lifetime Lifetime, factory ServiceFactory) ServiceDesc
 	return NewDescriptorForType(reflect.TypeOf((*T)(nil)).Elem(), lifetime, factory)
 }
 
+// NewDescriptorForType creates a new service descriptor.
+func NewDescriptorForTypeExplicitFactory(
+	serviceType reflect.Type, lifetime Lifetime, factoryFunc ServiceFactoryFunc,
+	requirements []reflect.Type, displayName string) ServiceDescriptor {
+	return NewDescriptorForType(
+		serviceType, lifetime, 
+		NewExplicitFactory(factoryFunc, requirements, displayName))
+}
+
+
+// NewSingletonForType creates a new singleton service descriptor for the given service type.
+func NewSingletonForType(serviceType reflect.Type, factory ServiceFactory) ServiceDescriptor {
+	return NewDescriptorForType(serviceType, Singleton, factory)
+}
+
 // NewSingleton creates a new singleton service descriptor for the given service type.
 func NewSingleton[T any](factory ServiceFactory) ServiceDescriptor {
 	return NewDescriptor[T](Singleton, factory)
 }
 
+// NewSingletonFactoryForType creates a new singleton service descriptor for the given service type.
+func NewSingletonFactoryForType(
+	serviceType reflect.Type, 
+	factoryFunc ServiceFactoryFunc) ServiceDescriptor {
+	return NewSingletonForType(serviceType, NewFactory(factoryFunc))
+}
+
+// NewSingletonFactory creates a new singleton service descriptor for the given service type.
+func NewSingletonFactory[T any](factoryFunc ServiceFactoryFunc) ServiceDescriptor {
+	return NewSingleton[T](NewFactory(factoryFunc))
+}
+
+// NewSingletonStructForType creates a new singleton service descriptor for the given service type.
+func NewSingletonStructForType(
+	serviceType reflect.Type, structType reflect.Type) (ServiceDescriptor, error) {
+	factory, err := NewStructFactoryForType(structType)
+	if err != nil {
+		return nil, err
+	}
+	return NewSingletonForType(serviceType, factory), nil
+}
+
+// NewSingletonStruct creates a new singleton service descriptor for the given service type.
+func NewSingletonStruct[T any, Impl any]() (ServiceDescriptor, error) {
+	factory, err := NewStructFactory[Impl]()
+	if err != nil {
+		return nil, err
+	}
+	return NewSingleton[T](factory), nil
+}
+
+
+// NewScopedForType creates a new scoped service descriptor for the given service type.
+func NewScopedForType(serviceType reflect.Type, factory ServiceFactory) ServiceDescriptor {
+	return NewDescriptorForType(serviceType, Scoped, factory)
+}
+
 // NewScoped creates a new scoped service descriptor for the given service type.
 func NewScoped[T any](factory ServiceFactory) ServiceDescriptor {
 	return NewDescriptor[T](Scoped, factory)
+}
+
+
+// NewTransientForType creates a new transient service descriptor for the given service type.
+func NewTransientForType(serviceType reflect.Type, factory ServiceFactory) ServiceDescriptor {
+	return NewDescriptorForType(serviceType, Transient, factory)
 }
 
 // NewTransient creates a new transient service descriptor for the given service type.
