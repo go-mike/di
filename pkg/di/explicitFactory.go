@@ -3,6 +3,8 @@ package di
 import (
 	"errors"
 	"reflect"
+	"runtime"
+	"strings"
 
 	"golang.org/x/exp/slices"
 )
@@ -77,11 +79,18 @@ func NewStructFactoryForType(structType reflect.Type) (ServiceFactory, error) {
 	return NewExplicitFactory(factory, requirements, displayName), nil
 }
 
+// NewStructFactory creates a new service factory from the given struct type.
+// parameters:
+// 	structType - the struct type to create the service from
+// returns:
+// 	the new service factory
+func NewStructFactory[T any]() (ServiceFactory, error) {
+	return NewStructFactoryForType(reflect.TypeOf((*T)(nil)).Elem())
+}
+
 // NewFuncFactory creates a new service factory from the given struct type.
 // parameters:
-// 	factoryFunc - the factory function to create the service
-// 	requirements - the service's requirements
-// 	displayName - the service's display name
+// 	function - the function to create the service from
 // returns:
 // 	the new service factory
 func NewFuncFactory(function interface{}) (ServiceFactory, error) {
@@ -91,15 +100,23 @@ func NewFuncFactory(function interface{}) (ServiceFactory, error) {
 		return nil, ErrInvalidFuncType
 	}
 
-	displayName := funcType.Name()
-
-	numParams := funcType.NumIn()
 	numResults := funcType.NumOut()
 
 	if numResults < 1 || numResults > 2 {
 		return nil, ErrInvalidFuncResults
 	}
 
+	if numResults == 2 && funcType.Out(1) != reflect.TypeOf((*error)(nil)).Elem() {
+		return nil, ErrInvalidFuncResults
+	}
+
+	valueOfFunc := reflect.ValueOf(function)
+
+	fullName := runtime.FuncForPC(valueOfFunc.Pointer()).Name()
+	fullNameSplit := strings.Split(fullName, ".")
+	displayName := fullNameSplit[len(fullNameSplit)-1]
+
+	numParams := funcType.NumIn()
 	requirements := make([]reflect.Type, numParams)
 
 	for i := 0; i < numParams; i++ {
@@ -116,14 +133,13 @@ func NewFuncFactory(function interface{}) (ServiceFactory, error) {
 			args[i] = reflect.ValueOf(service)
 		}
 
-		funcResult := reflect.ValueOf(function).Call(args)
+		funcResult := valueOfFunc.Call(args)
 
 		if len(funcResult) == 1 {
 			return funcResult[0].Interface(), nil
-		} else if len(funcResult) == 2 {
-			return funcResult[0].Interface(), funcResult[1].Interface().(error)
 		} else {
-			return nil, ErrInvalidFuncResults
+			err, _ := funcResult[1].Interface().(error)
+			return funcResult[0].Interface(), err
 		}
 	}
 

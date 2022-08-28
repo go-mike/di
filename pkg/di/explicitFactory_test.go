@@ -1,6 +1,7 @@
 package di
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
@@ -33,10 +34,6 @@ type testServiceStruct struct{}
 func testFactoryFunc(provider ServiceProvider) (interface{}, error) {
 	return &testServiceStruct{}, nil
 }
-
-// func testFactoryFunc(value1 int, value2 string, value3 error) (*testServiceStruct, error) {
-// 	panic("unimplemented")
-// }
 
 func TestNewExplicitFactory(t *testing.T) {
 	// Given
@@ -108,6 +105,29 @@ func (*testStructWithFieldsProvider) GetService(serviceType reflect.Type) (inter
 	}
 	panic("unexpected")
 }
+type testStructWithFailProvider struct{}
+var ErrTestFailProvider = errors.New("test fail provider")
+func (*testStructWithFailProvider) GetService(serviceType reflect.Type) (interface{}, error) {
+	return nil, ErrTestFailProvider
+}
+
+func TestNewStructFactoryForTypeOnNullType(t *testing.T) {
+	// When
+	factory, err := NewStructFactoryForType(nil)
+	// Then
+	assert.Equal(t, ErrInvalidStructType, err)
+	// Then
+	assert.Nil(t, factory)
+}
+
+func TestNewStructFactoryForTypeOnOtherType(t *testing.T) {
+	// When
+	factory, err := NewStructFactoryForType(reflect.TypeOf(int(0)))
+	// Then
+	assert.Equal(t, ErrInvalidStructType, err)
+	// Then
+	assert.Nil(t, factory)
+}
 
 func TestNewStructFactoryForType(t *testing.T) {
 	// Given
@@ -145,4 +165,282 @@ func TestNewStructFactoryForType(t *testing.T) {
 	assert.IsType(t, &testStructWithFields{}, service)
 	// Then
 	assert.Equal(t, &expectedService, service)
+}
+
+func TestNewStructFactoryForTypeOnFailingProvider(t *testing.T) {
+	// Given
+	displayName := "testStructWithFields"
+	// Given
+	expectedRequirements := []reflect.Type{
+		reflect.TypeOf(int(0)), 
+		reflect.TypeOf(string("")), 
+		reflect.TypeOf(testBoolSlice),
+	}
+	// When
+	factory, err := NewStructFactoryForType(reflect.TypeOf(testStructWithFields{}))
+	// Then
+	assert.Nil(t, err)
+	// Then
+	assert.NotNil(t, factory)
+	// Then
+	assert.Equal(t, displayName, factory.DisplayName())
+	// Then
+	actualRequirements := factory.Requirements()
+	assert.Equal(t, expectedRequirements, actualRequirements)
+	// When
+	service, err := factory.Create(&testStructWithFailProvider{})
+	// Then
+	assert.Equal(t, ErrTestFailProvider, err)
+	// Then
+	assert.Nil(t, service)
+}
+
+func TestNewStructFactory(t *testing.T) {
+	// Given
+	displayName := "testStructWithFields"
+	// Given
+	expectedRequirements := []reflect.Type{
+		reflect.TypeOf(int(0)), 
+		reflect.TypeOf(string("")), 
+		reflect.TypeOf(testBoolSlice),
+	}
+	// Given
+	expectedService := testStructWithFields{
+		Field1: 42,
+		Field2: "hello",
+		Field3: testBoolSlice,
+	}
+	// When
+	factory, err := NewStructFactory[testStructWithFields]()
+	// Then
+	assert.Nil(t, err)
+	// Then
+	assert.NotNil(t, factory)
+	// Then
+	assert.Equal(t, displayName, factory.DisplayName())
+	// Then
+	actualRequirements := factory.Requirements()
+	assert.Equal(t, expectedRequirements, actualRequirements)
+	// When
+	service, err := factory.Create(&testStructWithFieldsProvider{})
+	// Then
+	assert.Nil(t, err)
+	// Then
+	assert.NotNil(t, service)
+	// Then
+	assert.IsType(t, &testStructWithFields{}, service)
+	// Then
+	assert.Equal(t, &expectedService, service)
+}
+
+func testFuncFactoryNoResult (field1 int, field2 string, field3 []bool) {
+}
+func testFuncFactoryNoError (field1 int, field2 string, field3 []bool) *testStructWithFields {
+	return &testStructWithFields{
+		Field1: field1,
+		Field2: field2,
+		Field3: field3,
+	}
+}
+func testFuncFactoryWithError (field1 int, field2 string, field3 []bool) (*testStructWithFields, error) {
+	return &testStructWithFields{
+		Field1: field1,
+		Field2: field2,
+		Field3: field3,
+	}, nil
+}
+func testFuncFactoryWithWrongResults (field1 int, field2 string, field3 []bool) (error, *testStructWithFields) {
+	return nil, &testStructWithFields{
+		Field1: field1,
+		Field2: field2,
+		Field3: field3,
+	}
+}
+func testFuncFactoryWithManyResults (field1 int, field2 string, field3 []bool) (*testStructWithFields, string, error) {
+	return &testStructWithFields{
+		Field1: field1,
+		Field2: field2,
+		Field3: field3,
+	}, "", nil
+}
+var ErrTestFailFactory = errors.New("test fail factory")
+func testFuncFactoryWithFail (field1 int, field2 string, field3 []bool) (*testStructWithFields, error) {
+	return nil, ErrTestFailFactory
+}
+
+func TestNewFuncFactoryOnNullType(t *testing.T) {
+	// When
+	factory, err := NewFuncFactory(nil)
+	// Then
+	assert.Equal(t, ErrInvalidFuncType, err)
+	// Then
+	assert.Nil(t, factory)
+}
+
+func TestNewFuncFactoryOnOtherType(t *testing.T) {
+	// When
+	factory, err := NewFuncFactory(&testStructWithFields{})
+	// Then
+	assert.Equal(t, ErrInvalidFuncType, err)
+	// Then
+	assert.Nil(t, factory)
+}
+
+func TestNewFuncFactoryOnNoResults(t *testing.T) {
+	// When
+	factory, err := NewFuncFactory(testFuncFactoryNoResult)
+	// Then
+	assert.Equal(t, ErrInvalidFuncResults, err)
+	// Then
+	assert.Nil(t, factory)
+}
+
+func TestNewFuncFactoryOnWrongResults(t *testing.T) {
+	// When
+	factory, err := NewFuncFactory(testFuncFactoryWithWrongResults)
+	// Then
+	assert.Equal(t, ErrInvalidFuncResults, err)
+	// Then
+	assert.Nil(t, factory)
+}
+
+func TestNewFuncFactoryOnManyResults(t *testing.T) {
+	// When
+	factory, err := NewFuncFactory(testFuncFactoryWithManyResults)
+	// Then
+	assert.Equal(t, ErrInvalidFuncResults, err)
+	// Then
+	assert.Nil(t, factory)
+}
+
+func TestNewFuncFactoryOnNoError(t *testing.T) {
+	// Given
+	displayName := "testFuncFactoryNoError"
+	// Given
+	expectedRequirements := []reflect.Type{
+		reflect.TypeOf(int(0)),
+		reflect.TypeOf(string("")),
+		reflect.TypeOf(testBoolSlice),
+	}
+	// Given
+	expectedService := testStructWithFields{
+		Field1: 42,
+		Field2: "hello",
+		Field3: testBoolSlice,
+	}
+	// When
+	factory, err := NewFuncFactory(testFuncFactoryNoError)
+	// Then
+	assert.Nil(t, err)
+	// Then
+	assert.NotNil(t, factory)
+	// Then
+	assert.Equal(t, displayName, factory.DisplayName())
+	// Then
+	actualRequirements := factory.Requirements()
+	assert.Equal(t, expectedRequirements, actualRequirements)
+	// When
+	service, err := factory.Create(&testStructWithFieldsProvider{})
+	// Then
+	assert.Nil(t, err)
+	// Then
+	assert.NotNil(t, service)
+	// Then
+	assert.IsType(t, &testStructWithFields{}, service)
+	// Then
+	assert.Equal(t, &expectedService, service)
+}
+
+func TestNewFuncFactoryOnWithError(t *testing.T) {
+	// Given
+	displayName := "testFuncFactoryWithError"
+	// Given
+	expectedRequirements := []reflect.Type{
+		reflect.TypeOf(int(0)),
+		reflect.TypeOf(string("")),
+		reflect.TypeOf(testBoolSlice),
+	}
+	// Given
+	expectedService := testStructWithFields{
+		Field1: 42,
+		Field2: "hello",
+		Field3: testBoolSlice,
+	}
+	// When
+	factory, err := NewFuncFactory(testFuncFactoryWithError)
+	// Then
+	assert.Nil(t, err)
+	// Then
+	assert.NotNil(t, factory)
+	// Then
+	assert.Equal(t, displayName, factory.DisplayName())
+	// Then
+	actualRequirements := factory.Requirements()
+	assert.Equal(t, expectedRequirements, actualRequirements)
+	// When
+	service, err := factory.Create(&testStructWithFieldsProvider{})
+	// Then
+	assert.Nil(t, err)
+	// Then
+	assert.NotNil(t, service)
+	// Then
+	assert.IsType(t, &testStructWithFields{}, service)
+	// Then
+	assert.Equal(t, &expectedService, service)
+}
+
+func TestNewFuncFactoryOnWithFail(t *testing.T) {
+	// Given
+	displayName := "testFuncFactoryWithFail"
+	// Given
+	expectedRequirements := []reflect.Type{
+		reflect.TypeOf(int(0)),
+		reflect.TypeOf(string("")),
+		reflect.TypeOf(testBoolSlice),
+	}
+	// When
+	factory, err := NewFuncFactory(testFuncFactoryWithFail)
+	// Then
+	assert.Nil(t, err)
+	// Then
+	assert.NotNil(t, factory)
+	// Then
+	assert.Equal(t, displayName, factory.DisplayName())
+	// Then
+	actualRequirements := factory.Requirements()
+	assert.Equal(t, expectedRequirements, actualRequirements)
+	// When
+	service, err := factory.Create(&testStructWithFieldsProvider{})
+	// Then
+	assert.Equal(t, ErrTestFailFactory, err)
+	// Then
+	assert.Nil(t, service)
+}
+
+func TestNewFuncFactoryOnFailingProvider(t *testing.T) {
+	// Given
+	displayName := "testFuncFactoryNoError"
+	// Given
+	expectedRequirements := []reflect.Type{
+		reflect.TypeOf(int(0)),
+		reflect.TypeOf(string("")),
+		reflect.TypeOf(testBoolSlice),
+	}
+	// When
+	factory, err := NewFuncFactory(testFuncFactoryNoError)
+	// Then
+	assert.Nil(t, err)
+	// Then
+	assert.NotNil(t, factory)
+	// Then
+	assert.Equal(t, displayName, factory.DisplayName())
+	// Then
+	actualRequirements := factory.Requirements()
+	assert.Equal(t, expectedRequirements, actualRequirements)
+	// When
+	service, err := factory.Create(&testStructWithFailProvider{})
+	// Then
+	assert.Equal(t, ErrTestFailProvider, err)
+	// Then
+	assert.Nil(t, service)
 }
