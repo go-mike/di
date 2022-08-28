@@ -111,7 +111,7 @@ func (*testStructWithFailProvider) GetService(serviceType reflect.Type) (interfa
 	return nil, ErrTestFailProvider
 }
 
-func TestNewStructFactoryForTypeOnNullType(t *testing.T) {
+func TestNewStructFactoryForTypeOnNilType(t *testing.T) {
 	// When
 	factory, err := NewStructFactoryForType(nil)
 	// Then
@@ -268,7 +268,7 @@ func testFuncFactoryWithFail (field1 int, field2 string, field3 []bool) (*testSt
 	return nil, ErrTestFailFactory
 }
 
-func TestNewFuncFactoryOnNullType(t *testing.T) {
+func TestNewFuncFactoryOnNilType(t *testing.T) {
 	// When
 	factory, err := NewFuncFactory(nil)
 	// Then
@@ -443,4 +443,86 @@ func TestNewFuncFactoryOnFailingProvider(t *testing.T) {
 	assert.Equal(t, ErrTestFailProvider, err)
 	// Then
 	assert.Nil(t, service)
+}
+
+func TestNewInstanceFactoryOnNil(t *testing.T) {
+	// When
+	factory, err := newInstanceFactory(nil)
+	// Then
+	assert.Equal(t, ErrInvalidInstance, err)
+	// Then
+	assert.Nil(t, factory)
+}
+
+type testInstanceNoStringer struct {}
+type testInstanceStringer struct {}
+func (i *testInstanceStringer) String() string {
+	return "ImStringer"
+}
+
+func TestNewInstanceFactoryOnNoPtr(t *testing.T) {
+	// Given
+	instance := testInstanceNoStringer{}
+	// When
+	factory, err := newInstanceFactory(instance)
+	// Then
+	assert.Equal(t, ErrInvalidInstance, err)
+	// Then
+	assert.Nil(t, factory)
+}
+
+func TestNewInstanceFactoryOnNoStringer(t *testing.T) {
+	// Given
+	displayName := "<testInstanceNoStringer Instance>"
+	// Given
+	expectedRequirements := []reflect.Type{}
+	// Given
+	instance := &testInstanceNoStringer{}
+	// When
+	factory, err := newInstanceFactory(instance)
+	// Then
+	assert.Nil(t, err)
+	// Then
+	assert.NotNil(t, factory)
+	// Then
+	assert.Equal(t, displayName, factory.DisplayName())
+	// Then
+	actualRequirements := factory.Requirements()
+	assert.Equal(t, expectedRequirements, actualRequirements)
+	// When
+	service, err := factory.Create(&testStructWithFieldsProvider{})
+	// Then
+	assert.Nil(t, err)
+	// Then
+	assert.NotNil(t, service)
+	// Then
+	assert.Same(t, instance, service)
+}
+
+func TestNewInstanceFactoryOnStringer(t *testing.T) {
+	// Given
+	displayName := "ImStringer"
+	// Given
+	expectedRequirements := []reflect.Type{}
+	// Given
+	instance := &testInstanceStringer{}
+	// When
+	factory, err := newInstanceFactory(instance)
+	// Then
+	assert.Nil(t, err)
+	// Then
+	assert.NotNil(t, factory)
+	// Then
+	assert.Equal(t, displayName, factory.DisplayName())
+	// Then
+	actualRequirements := factory.Requirements()
+	assert.Equal(t, expectedRequirements, actualRequirements)
+	// When
+	service, err := factory.Create(&testStructWithFieldsProvider{})
+	// Then
+	assert.Nil(t, err)
+	// Then
+	assert.NotNil(t, service)
+	// Then
+	assert.Same(t, instance, service)
 }

@@ -2,6 +2,7 @@ package di
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"runtime"
 	"strings"
@@ -12,6 +13,7 @@ import (
 var ErrInvalidStructType = errors.New("invalid struct type")
 var ErrInvalidFuncType = errors.New("invalid function type")
 var ErrInvalidFuncResults = errors.New("invalid function results")
+var ErrInvalidInstance = errors.New("invalid instance")
 
 type explicitFactory struct {
 	factoryFunc  ServiceFactoryFunc
@@ -88,7 +90,7 @@ func NewStructFactory[T any]() (ServiceFactory, error) {
 	return NewStructFactoryForType(reflect.TypeOf((*T)(nil)).Elem())
 }
 
-// NewFuncFactory creates a new service factory from the given struct type.
+// NewFuncFactory creates a new service factory from the given function.
 // parameters:
 // 	function - the function to create the service from
 // returns:
@@ -144,6 +146,36 @@ func NewFuncFactory(function interface{}) (ServiceFactory, error) {
 	}
 
 	return NewExplicitFactory(factory, requirements, displayName), nil
+}
+
+// newInstanceFactory creates a new service factory from the given instance.
+// Only singletons are supported.
+// parameters:
+// 	function - the function to create the service from
+// returns:
+// 	the new service factory
+func newInstanceFactory(instance interface{}) (ServiceFactory, error) {
+	if instance == nil {
+		return nil, ErrInvalidInstance
+	}
+	instanceType := reflect.TypeOf(instance)
+	if instanceType.Kind() != reflect.Ptr {
+		return nil, ErrInvalidInstance
+	}
+
+	var displayName string
+	stringer, ok := instance.(fmt.Stringer)
+	if ok {
+		displayName = stringer.String()
+	} else {
+		displayName = fmt.Sprintf("<%s Instance>", instanceType.Elem().Name())
+	}
+
+	factory := func (provider ServiceProvider) (interface{}, error) {
+		return instance, nil
+	}
+
+	return NewExplicitFactory(factory, []reflect.Type{}, displayName), nil
 }
 
 // ServiceFactory interface implementation
