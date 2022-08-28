@@ -95,6 +95,37 @@ func NewScoped[T any](factory ServiceFactory) ServiceDescriptor {
 	return NewDescriptor[T](Scoped, factory)
 }
 
+// NewScopedFactoryForType creates a new singleton service descriptor for the given service type.
+func NewScopedFactoryForType(
+	serviceType reflect.Type,
+	factoryFunc SimpleServiceFactoryFunc) ServiceDescriptor {
+	return NewScopedForType(serviceType, NewFactory(factoryFunc))
+}
+
+// NewScopedFactory creates a new singleton service descriptor for the given service type.
+func NewScopedFactory[T any](factoryFunc SimpleServiceFactoryFunc) ServiceDescriptor {
+	return NewScoped[T](NewFactory(factoryFunc))
+}
+
+// NewScopedStructForType creates a new singleton service descriptor for the given service type.
+func NewScopedStructForType(
+	serviceType reflect.Type, structType reflect.Type) (ServiceDescriptor, error) {
+	factory, err := NewStructFactoryForType(structType)
+	if err != nil {
+		return nil, err
+	}
+	return NewScopedForType(serviceType, factory), nil
+}
+
+// NewScopedStruct creates a new singleton service descriptor for the given service type.
+func NewScopedStruct[T any, Impl any]() (ServiceDescriptor, error) {
+	factory, err := NewStructFactory[Impl]()
+	if err != nil {
+		return nil, err
+	}
+	return NewScoped[T](factory), nil
+}
+
 
 // NewTransientForType creates a new transient service descriptor for the given service type.
 func NewTransientForType(serviceType reflect.Type, factory ServiceFactory) ServiceDescriptor {
@@ -104,6 +135,37 @@ func NewTransientForType(serviceType reflect.Type, factory ServiceFactory) Servi
 // NewTransient creates a new transient service descriptor for the given service type.
 func NewTransient[T any](factory ServiceFactory) ServiceDescriptor {
 	return NewDescriptor[T](Transient, factory)
+}
+
+// NewTransientFactoryForType creates a new singleton service descriptor for the given service type.
+func NewTransientFactoryForType(
+	serviceType reflect.Type,
+	factoryFunc SimpleServiceFactoryFunc) ServiceDescriptor {
+	return NewTransientForType(serviceType, NewFactory(factoryFunc))
+}
+
+// NewTransientFactory creates a new singleton service descriptor for the given service type.
+func NewTransientFactory[T any](factoryFunc SimpleServiceFactoryFunc) ServiceDescriptor {
+	return NewTransient[T](NewFactory(factoryFunc))
+}
+
+// NewTransientStructForType creates a new singleton service descriptor for the given service type.
+func NewTransientStructForType(
+	serviceType reflect.Type, structType reflect.Type) (ServiceDescriptor, error) {
+	factory, err := NewStructFactoryForType(structType)
+	if err != nil {
+		return nil, err
+	}
+	return NewTransientForType(serviceType, factory), nil
+}
+
+// NewTransientStruct creates a new singleton service descriptor for the given service type.
+func NewTransientStruct[T any, Impl any]() (ServiceDescriptor, error) {
+	factory, err := NewStructFactory[Impl]()
+	if err != nil {
+		return nil, err
+	}
+	return NewTransient[T](factory), nil
 }
 
 
@@ -122,4 +184,23 @@ func (desc *descriptor) Lifetime() Lifetime {
 // ServiceType implements ServiceDescriptor.ServiceType to return the service type.
 func (desc *descriptor) ServiceType() reflect.Type {
 	return desc.serviceType
+}
+
+
+// NewInstanceForType creates a new singleton service descriptor for the given service instance.
+func NewInstanceForType(serviceType reflect.Type, instance interface{}) (ServiceDescriptor, error) {
+	factory, err := newInstanceFactory(instance)
+	if err != nil {
+		return nil, err
+	}
+	return NewSingletonForType(serviceType, factory), nil
+}
+
+// NewInstance creates a new singleton service descriptor for the given service instance.
+func NewInstance[T any](instance T) (ServiceDescriptor, error) {
+	factory, err := newInstanceFactory(instance)
+	if err != nil {
+		return nil, err
+	}
+	return NewSingleton[T](factory), nil
 }
