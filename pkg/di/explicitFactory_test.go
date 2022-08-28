@@ -61,9 +61,11 @@ func TestNewExplicitFactory(t *testing.T) {
 	// Then
 	assert.Nil(t, err)
 	// Then
-	assert.NotNil(t, service)
+	assert.NotNil(t, service.Instance)
 	// Then
-	assert.IsType(t, &testServiceStruct{}, service)
+	assert.NotNil(t, service.Disposable)
+	// Then
+	assert.IsType(t, &testServiceStruct{}, service.Instance)
 }
 
 func TestNewFactory(t *testing.T) {
@@ -83,9 +85,11 @@ func TestNewFactory(t *testing.T) {
 	// Then
 	assert.Nil(t, err)
 	// Then
-	assert.NotNil(t, service)
+	assert.NotNil(t, service.Instance)
 	// Then
-	assert.IsType(t, &testServiceStruct{}, service)
+	assert.NotNil(t, service.Disposable)
+	// Then
+	assert.IsType(t, &testServiceStruct{}, service.Instance)
 }
 
 type testStructWithFields struct {
@@ -134,8 +138,8 @@ func TestNewStructFactoryForType(t *testing.T) {
 	displayName := "testStructWithFields"
 	// Given
 	expectedRequirements := []reflect.Type{
-		reflect.TypeOf(int(0)), 
-		reflect.TypeOf(string("")), 
+		reflect.TypeOf(int(0)),
+		reflect.TypeOf(string("")),
 		reflect.TypeOf(testBoolSlice),
 	}
 	// Given
@@ -160,11 +164,13 @@ func TestNewStructFactoryForType(t *testing.T) {
 	// Then
 	assert.Nil(t, err)
 	// Then
-	assert.NotNil(t, service)
+	assert.NotNil(t, service.Instance)
 	// Then
-	assert.IsType(t, &testStructWithFields{}, service)
+	assert.NotNil(t, service.Disposable)
 	// Then
-	assert.Equal(t, &expectedService, service)
+	assert.IsType(t, &testStructWithFields{}, service.Instance)
+	// Then
+	assert.Equal(t, &expectedService, service.Instance)
 }
 
 func TestNewStructFactoryForTypeOnFailingProvider(t *testing.T) {
@@ -172,8 +178,8 @@ func TestNewStructFactoryForTypeOnFailingProvider(t *testing.T) {
 	displayName := "testStructWithFields"
 	// Given
 	expectedRequirements := []reflect.Type{
-		reflect.TypeOf(int(0)), 
-		reflect.TypeOf(string("")), 
+		reflect.TypeOf(int(0)),
+		reflect.TypeOf(string("")),
 		reflect.TypeOf(testBoolSlice),
 	}
 	// When
@@ -192,7 +198,7 @@ func TestNewStructFactoryForTypeOnFailingProvider(t *testing.T) {
 	// Then
 	assert.Equal(t, ErrTestFailProvider, err)
 	// Then
-	assert.Nil(t, service)
+	assert.Nil(t, service.Instance)
 }
 
 func TestNewStructFactory(t *testing.T) {
@@ -200,8 +206,8 @@ func TestNewStructFactory(t *testing.T) {
 	displayName := "testStructWithFields"
 	// Given
 	expectedRequirements := []reflect.Type{
-		reflect.TypeOf(int(0)), 
-		reflect.TypeOf(string("")), 
+		reflect.TypeOf(int(0)),
+		reflect.TypeOf(string("")),
 		reflect.TypeOf(testBoolSlice),
 	}
 	// Given
@@ -226,11 +232,13 @@ func TestNewStructFactory(t *testing.T) {
 	// Then
 	assert.Nil(t, err)
 	// Then
-	assert.NotNil(t, service)
+	assert.NotNil(t, service.Instance)
 	// Then
-	assert.IsType(t, &testStructWithFields{}, service)
+	assert.NotNil(t, service.Disposable)
 	// Then
-	assert.Equal(t, &expectedService, service)
+	assert.IsType(t, &testStructWithFields{}, service.Instance)
+	// Then
+	assert.Equal(t, &expectedService, service.Instance)
 }
 
 func testFuncFactoryNoResult (field1 int, field2 string, field3 []bool) {
@@ -344,11 +352,13 @@ func TestNewFuncFactoryOnNoError(t *testing.T) {
 	// Then
 	assert.Nil(t, err)
 	// Then
-	assert.NotNil(t, service)
+	assert.NotNil(t, service.Instance)
 	// Then
-	assert.IsType(t, &testStructWithFields{}, service)
+	assert.NotNil(t, service.Disposable)
 	// Then
-	assert.Equal(t, &expectedService, service)
+	assert.IsType(t, &testStructWithFields{}, service.Instance)
+	// Then
+	assert.Equal(t, &expectedService, service.Instance)
 }
 
 func TestNewFuncFactoryOnWithError(t *testing.T) {
@@ -382,11 +392,13 @@ func TestNewFuncFactoryOnWithError(t *testing.T) {
 	// Then
 	assert.Nil(t, err)
 	// Then
-	assert.NotNil(t, service)
+	assert.NotNil(t, service.Instance)
 	// Then
-	assert.IsType(t, &testStructWithFields{}, service)
+	assert.NotNil(t, service.Disposable)
 	// Then
-	assert.Equal(t, &expectedService, service)
+	assert.IsType(t, &testStructWithFields{}, service.Instance)
+	// Then
+	assert.Equal(t, &expectedService, service.Instance)
 }
 
 func TestNewFuncFactoryOnWithFail(t *testing.T) {
@@ -414,7 +426,7 @@ func TestNewFuncFactoryOnWithFail(t *testing.T) {
 	// Then
 	assert.Equal(t, ErrTestFailFactory, err)
 	// Then
-	assert.Nil(t, service)
+	assert.Nil(t, service.Instance)
 }
 
 func TestNewFuncFactoryOnFailingProvider(t *testing.T) {
@@ -442,7 +454,7 @@ func TestNewFuncFactoryOnFailingProvider(t *testing.T) {
 	// Then
 	assert.Equal(t, ErrTestFailProvider, err)
 	// Then
-	assert.Nil(t, service)
+	assert.Nil(t, service.Instance)
 }
 
 func TestNewInstanceFactoryOnNil(t *testing.T) {
@@ -496,7 +508,7 @@ func TestNewInstanceFactoryOnNoStringer(t *testing.T) {
 	// Then
 	assert.NotNil(t, service)
 	// Then
-	assert.Same(t, instance, service)
+	assert.Same(t, instance, service.Instance)
 }
 
 func TestNewInstanceFactoryOnStringer(t *testing.T) {
@@ -524,5 +536,5 @@ func TestNewInstanceFactoryOnStringer(t *testing.T) {
 	// Then
 	assert.NotNil(t, service)
 	// Then
-	assert.Same(t, instance, service)
+	assert.Same(t, instance, service.Instance)
 }

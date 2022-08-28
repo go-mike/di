@@ -9,7 +9,7 @@ import (
 
 type testServiceInterface interface{}
 type testServiceFactoryFunc struct{}
-func (*testServiceFactoryFunc) Create(provider ServiceProvider) (interface{}, error) {
+func (*testServiceFactoryFunc) Create(provider ServiceProvider) (ServiceInstance, error) {
 	panic("unimplemented")
 }
 func (*testServiceFactoryFunc) DisplayName() string {

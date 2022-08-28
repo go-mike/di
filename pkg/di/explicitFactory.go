@@ -21,6 +21,24 @@ type explicitFactory struct {
 	displayName  string
 }
 
+// NewDisposableExplicitFactory creates a new service factory from the given factory function.
+// parameters:
+// 	factoryFunc - the factory function to create the service
+// 	requirements - the service's requirements
+// 	displayName - the service's display name
+// returns:
+// 	the new service factory
+func NewDisposableExplicitFactory(
+	factoryFunc ServiceFactoryFunc,
+	requirements []reflect.Type,
+	displayName string) ServiceFactory {
+	return &explicitFactory {
+		factoryFunc:  factoryFunc,
+		requirements: requirements,
+		displayName:  displayName,
+	}
+}
+
 // NewExplicitFactory creates a new service factory from the given factory function.
 // parameters:
 // 	factoryFunc - the factory function to create the service
@@ -28,12 +46,20 @@ type explicitFactory struct {
 // 	displayName - the service's display name
 // returns:
 // 	the new service factory
-func NewExplicitFactory(factoryFunc ServiceFactoryFunc, requirements []reflect.Type, displayName string) ServiceFactory {
-	return &explicitFactory{
-		factoryFunc:  factoryFunc,
-		requirements: slices.Clone(requirements),
-		displayName:  displayName,
-	}
+func NewExplicitFactory(
+	factoryFunc SimpleServiceFactoryFunc,
+	requirements []reflect.Type,
+	displayName string) ServiceFactory {
+	return NewDisposableExplicitFactory(factoryFunc.toDisposable(), requirements, displayName)
+}
+
+// NewDisposableFactory creates a new service factory from the given factory function.
+// parameters:
+// 	factoryFunc - the factory function to create the service
+// returns:
+// 	the new service factory
+func NewDisposableFactory(factoryFunc ServiceFactoryFunc) ServiceFactory {
+	return NewDisposableExplicitFactory(factoryFunc, []reflect.Type{}, "<Factory>")
 }
 
 // NewFactory creates a new service factory from the given factory function.
@@ -41,8 +67,8 @@ func NewExplicitFactory(factoryFunc ServiceFactoryFunc, requirements []reflect.T
 // 	factoryFunc - the factory function to create the service
 // returns:
 // 	the new service factory
-func NewFactory(factoryFunc ServiceFactoryFunc) ServiceFactory {
-	return NewExplicitFactory(factoryFunc, []reflect.Type{}, "<Factory>")
+func NewFactory(factoryFunc SimpleServiceFactoryFunc) ServiceFactory {
+	return NewDisposableFactory(factoryFunc.toDisposable())
 }
 
 // NewStructFactoryForType creates a new service factory from the given struct type.
@@ -181,7 +207,7 @@ func newInstanceFactory(instance interface{}) (ServiceFactory, error) {
 // ServiceFactory interface implementation
 
 // Create implements ServiceFactory.Create to create a new instance of the service.
-func (fact *explicitFactory) Create(provider ServiceProvider) (interface{}, error) {
+func (fact *explicitFactory) Create(provider ServiceProvider) (ServiceInstance, error) {
 	return fact.factoryFunc(provider)
 }
 

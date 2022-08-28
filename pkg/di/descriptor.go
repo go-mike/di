@@ -32,10 +32,13 @@ func NewDescriptor[T any](lifetime Lifetime, factory ServiceFactory) ServiceDesc
 
 // NewDescriptorForType creates a new service descriptor.
 func NewDescriptorForTypeExplicitFactory(
-	serviceType reflect.Type, lifetime Lifetime, factoryFunc ServiceFactoryFunc,
-	requirements []reflect.Type, displayName string) ServiceDescriptor {
+	serviceType reflect.Type, 
+	lifetime Lifetime, 
+	factoryFunc SimpleServiceFactoryFunc,
+	requirements []reflect.Type, 
+	displayName string) ServiceDescriptor {
 	return NewDescriptorForType(
-		serviceType, lifetime, 
+		serviceType, lifetime,
 		NewExplicitFactory(factoryFunc, requirements, displayName))
 }
 
@@ -52,13 +55,13 @@ func NewSingleton[T any](factory ServiceFactory) ServiceDescriptor {
 
 // NewSingletonFactoryForType creates a new singleton service descriptor for the given service type.
 func NewSingletonFactoryForType(
-	serviceType reflect.Type, 
-	factoryFunc ServiceFactoryFunc) ServiceDescriptor {
+	serviceType reflect.Type,
+	factoryFunc SimpleServiceFactoryFunc) ServiceDescriptor {
 	return NewSingletonForType(serviceType, NewFactory(factoryFunc))
 }
 
 // NewSingletonFactory creates a new singleton service descriptor for the given service type.
-func NewSingletonFactory[T any](factoryFunc ServiceFactoryFunc) ServiceDescriptor {
+func NewSingletonFactory[T any](factoryFunc SimpleServiceFactoryFunc) ServiceDescriptor {
 	return NewSingleton[T](NewFactory(factoryFunc))
 }
 
