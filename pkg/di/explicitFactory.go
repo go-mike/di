@@ -1,7 +1,6 @@
 package di
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"runtime"
@@ -9,11 +8,6 @@ import (
 
 	"golang.org/x/exp/slices"
 )
-
-var ErrInvalidStructType = errors.New("invalid struct type")
-var ErrInvalidFuncType = errors.New("invalid function type")
-var ErrInvalidFuncResults = errors.New("invalid function results")
-var ErrInvalidInstance = errors.New("invalid instance")
 
 type explicitFactory struct {
 	factoryFunc  ServiceFactoryFunc
@@ -77,34 +71,17 @@ func NewFactory(factoryFunc SimpleServiceFactoryFunc) ServiceFactory {
 // returns:
 // 	the new service factory
 func NewStructFactoryForType(structType reflect.Type) (ServiceFactory, error) {
-	if structType == nil || structType.Kind() != reflect.Struct {
-		return nil, ErrInvalidStructType
-	}
+	factory, err := ActivateStructFactoryForType(structType)
+	if err != nil { return nil, err }
 
 	displayName := structType.Name()
 
-	numField := structType.NumField()
+	requirements := rangeMapSlice(0, structType.NumField(),
+		func (i int) reflect.Type {
+			return structType.Field(i).Type
+		})
 
-	requirements := make([]reflect.Type, numField)
-
-	for i := 0; i < numField; i++ {
-		requirements[i] = structType.Field(i).Type
-	}
-
-	factory := func (provider ServiceProvider) (interface{}, error) {
-		result := reflect.New(structType)
-		elem := result.Elem()
-		for i := 0; i < numField; i++ {
-			service, err := provider.GetService(requirements[i])
-			if err != nil {
-				return nil, err
-			}
-			elem.Field(i).Set(reflect.ValueOf(service))
-		}
-		return result.Interface(), nil
-	}
-
-	return NewExplicitFactory(factory, requirements, displayName), nil
+	return NewDisposableExplicitFactory(factory, requirements, displayName), nil
 }
 
 // NewStructFactory creates a new service factory from the given struct type.
@@ -121,57 +98,23 @@ func NewStructFactory[T any]() (ServiceFactory, error) {
 // 	function - the function to create the service from
 // returns:
 // 	the new service factory
-func NewFuncFactory(function interface{}) (ServiceFactory, error) {
+func NewFuncFactory(function any) (ServiceFactory, error) {
+	factory, err := ActivateFuncFactoryForType(function)
+	if err != nil { return nil, err }
+
 	funcType := reflect.TypeOf(function)
 
-	if funcType == nil || funcType.Kind() != reflect.Func {
-		return nil, ErrInvalidFuncType
-	}
-
-	numResults := funcType.NumOut()
-
-	if numResults < 1 || numResults > 2 {
-		return nil, ErrInvalidFuncResults
-	}
-
-	if numResults == 2 && funcType.Out(1) != reflect.TypeOf((*error)(nil)).Elem() {
-		return nil, ErrInvalidFuncResults
-	}
-
 	valueOfFunc := reflect.ValueOf(function)
-
 	fullName := runtime.FuncForPC(valueOfFunc.Pointer()).Name()
 	fullNameSplit := strings.Split(fullName, ".")
 	displayName := fullNameSplit[len(fullNameSplit)-1]
 
-	numParams := funcType.NumIn()
-	requirements := make([]reflect.Type, numParams)
+	requirements := rangeMapSlice(0, funcType.NumIn(),
+		func (i int) reflect.Type {
+			return funcType.In(i)
+		})
 
-	for i := 0; i < numParams; i++ {
-		requirements[i] = funcType.In(i)
-	}
-
-	factory := func (provider ServiceProvider) (interface{}, error) {
-		args := make([]reflect.Value, numParams)
-		for i := 0; i < numParams; i++ {
-			service, err := provider.GetService(requirements[i])
-			if err != nil {
-				return nil, err
-			}
-			args[i] = reflect.ValueOf(service)
-		}
-
-		funcResult := valueOfFunc.Call(args)
-
-		if len(funcResult) == 1 {
-			return funcResult[0].Interface(), nil
-		} else {
-			err, _ := funcResult[1].Interface().(error)
-			return funcResult[0].Interface(), err
-		}
-	}
-
-	return NewExplicitFactory(factory, requirements, displayName), nil
+	return NewDisposableExplicitFactory(factory, requirements, displayName), nil
 }
 
 // newInstanceFactory creates a new service factory from the given instance.
@@ -180,7 +123,7 @@ func NewFuncFactory(function interface{}) (ServiceFactory, error) {
 // 	function - the function to create the service from
 // returns:
 // 	the new service factory
-func newInstanceFactory(instance interface{}) (ServiceFactory, error) {
+func newInstanceFactory(instance any) (ServiceFactory, error) {
 	if instance == nil {
 		return nil, ErrInvalidInstance
 	}
@@ -197,7 +140,7 @@ func newInstanceFactory(instance interface{}) (ServiceFactory, error) {
 		displayName = fmt.Sprintf("<%s Instance>", instanceType.Elem().Name())
 	}
 
-	factory := func (provider ServiceProvider) (interface{}, error) {
+	factory := func (provider ServiceProvider) (any, error) {
 		return instance, nil
 	}
 

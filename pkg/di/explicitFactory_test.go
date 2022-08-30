@@ -31,7 +31,7 @@ func TestErrInvalidFuncResults(t *testing.T) {
 
 type testServiceStruct struct{}
 
-func testFactoryFunc(provider ServiceProvider) (interface{}, error) {
+func testFactoryFunc(provider ServiceProvider) (any, error) {
 	return &testServiceStruct{}, nil
 }
 
@@ -99,7 +99,7 @@ type testStructWithFields struct {
 }
 type testStructWithFieldsProvider struct{}
 var testBoolSlice = []bool{true, false}
-func (*testStructWithFieldsProvider) GetService(serviceType reflect.Type) (interface{}, error) {
+func (*testStructWithFieldsProvider) GetService(serviceType reflect.Type) (any, error) {
 	if serviceType == reflect.TypeOf(int(0)) {
 		return 42, nil
 	} else if serviceType == reflect.TypeOf(string("")) {
@@ -111,7 +111,7 @@ func (*testStructWithFieldsProvider) GetService(serviceType reflect.Type) (inter
 }
 type testStructWithFailProvider struct{}
 var ErrTestFailProvider = errors.New("test fail provider")
-func (*testStructWithFailProvider) GetService(serviceType reflect.Type) (interface{}, error) {
+func (*testStructWithFailProvider) GetService(serviceType reflect.Type) (any, error) {
 	return nil, ErrTestFailProvider
 }
 

@@ -188,7 +188,7 @@ func (desc *descriptor) ServiceType() reflect.Type {
 
 
 // NewInstanceForType creates a new singleton service descriptor for the given service instance.
-func NewInstanceForType(serviceType reflect.Type, instance interface{}) (ServiceDescriptor, error) {
+func NewInstanceForType(serviceType reflect.Type, instance any) (ServiceDescriptor, error) {
 	factory, err := newInstanceFactory(instance)
 	if err != nil {
 		return nil, err

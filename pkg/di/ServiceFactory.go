@@ -5,13 +5,13 @@ import (
 )
 
 type ServiceInstance struct {
-	Instance interface{}
+	Instance any
 	Disposable Disposable
 }
 
 type ServiceFactoryFunc func(provider ServiceProvider) (ServiceInstance, error)
 
-type SimpleServiceFactoryFunc func(provider ServiceProvider) (interface{}, error)
+type SimpleServiceFactoryFunc func(provider ServiceProvider) (any, error)
 
 type ServiceFactory interface {
 	Create(provider ServiceProvider) (ServiceInstance, error)
@@ -26,14 +26,9 @@ func (f SimpleServiceFactoryFunc) toDisposable() (ServiceFactoryFunc) {
 			return ServiceInstance{}, err
 		}
 
-		disposable, ok := instance.(Disposable)
-		if !ok {
-			disposable = NewNoopDisposable()
-		}
-
 		return ServiceInstance{
 			Instance: instance,
-			Disposable: disposable,
+			Disposable: toDisposable(instance),
 		}, nil
 	}
 }

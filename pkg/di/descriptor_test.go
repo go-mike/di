@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type testServiceInterface interface{}
+type testServiceInterface any
 type testServiceFactoryFunc struct{}
 func (*testServiceFactoryFunc) Create(provider ServiceProvider) (ServiceInstance, error) {
 	panic("unimplemented")
@@ -421,7 +421,7 @@ func TestNewTransientStructOnOtherType(t *testing.T) {
 }
 
 
-type testInstanceInterface interface{}
+type testInstanceInterface any
 type testInstanceImpl struct{}
 
 func TestNewInstanceForType(t *testing.T) {
