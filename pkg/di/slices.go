@@ -74,10 +74,26 @@ func partitionSlice[T any] (source []T, predicate func (T) bool) (trueItems []T,
 	return trueItems, falseItems
 }
 
+func rangeSlice(start int, count int) []int {
+	results := make([]int, count)
+	for i := 0; i < count; i++ {
+		results[i] = start + i
+	}
+	return results
+}
+
+func rangeSliceWithStep(start int, count int, step int) []int {
+	results := make([]int, count)
+	for i := 0; i < count; i++ {
+		results[i] = start + i * step
+	}
+	return results
+}
+
 func rangeMapSlice[T any](start int, count int, mapper func (int) T) []T {
 	results := make([]T, count)
-	for i := start; i < start+count; i++ {
-		results[i] = mapper(i)
+	for i := 0; i < count; i++ {
+		results[i] = mapper(start + i)
 	}
 	return results
 }

@@ -28,11 +28,12 @@ func (disp *disposable) Dispose() {
 
 // NewNoopDisposable returns a new disposable that does nothing when disposed.
 func NewNoopDisposable() Disposable {
-	return &noopDisposable{}
+	return noopDisposableInstance
 }
 
 // noopDisposable is a disposable implementation that does nothing when disposed.
 type noopDisposable struct{}
+var noopDisposableInstance = &noopDisposable{}
 
 // Dispose implements Disposable
 func (*noopDisposable) Dispose() {}
