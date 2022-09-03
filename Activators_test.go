@@ -2,6 +2,7 @@ package di
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,13 +12,13 @@ type testDummyDisposable struct{}
 func (*testDummyDisposable) Dispose() {}
 type testDummyNonDisposable struct{}
 
-func TestToDisposableOnActualDisposable(t *testing.T) {
+func TestToDisposable_OnActualDisposable(t *testing.T) {
 	actual := &testDummyDisposable{}
 	disposable := toDisposable(actual)
 	assert.Equal(t, actual, disposable)
 }
 
-func TestToDisposableOnNonDisposable(t *testing.T) {
+func TestToDisposable_OnNonDisposable(t *testing.T) {
 	actual := &testDummyNonDisposable{}
 	disposable := toDisposable(actual)
 	assert.NotNil(t, disposable)
@@ -39,7 +40,7 @@ func TestToSimpleFactory(t *testing.T) {
 	assert.Equal(t, instance, actualInstance)
 }
 
-func TestToSimpleFactoryWithError(t *testing.T) {
+func TestToSimpleFactory_WithError(t *testing.T) {
 	customError := errors.New("error")
 	fullFactory := func(provider ServiceProvider) (ServiceInstance, error) {
 		return ServiceInstance{}, customError
@@ -63,7 +64,7 @@ func TestToTypedFactory(t *testing.T) {
 	assert.Equal(t, instance, actualInstance)
 }
 
-func TestToTypedFactoryWithError(t *testing.T) {
+func TestToTypedFactory_WithError(t *testing.T) {
 	customError := errors.New("error")
 	simpleFactory := func(provider ServiceProvider) (any, error) {
 		return nil, customError
@@ -73,4 +74,16 @@ func TestToTypedFactoryWithError(t *testing.T) {
 	actualInstance, err := actualFactory(&testStructWithFieldsProvider{})
 	assert.Nil(t, actualInstance)
 	assert.Equal(t, customError, err)
+}
+
+func TestActivateStructFactoryForType_OnNil(t *testing.T) {
+	actual, err := ActivateStructFactoryForType(nil)
+	assert.Nil(t, actual)
+	assert.Equal(t, ErrInvalidStructType, err)
+}
+
+func TestActivateStructFactoryForType_OnNonStruct(t *testing.T) {
+	actual, err := ActivateStructFactoryForType(reflect.TypeOf(1))
+	assert.Nil(t, actual)
+	assert.Equal(t, ErrInvalidStructType, err)
 }
