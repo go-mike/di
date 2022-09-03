@@ -17,7 +17,7 @@ type SimpleServiceFactoryFuncOf[T any] func(provider ServiceProvider) (T, error)
 type SimpleServiceFactoryFuncOfPtr[T any] func(provider ServiceProvider) (*T, error)
 
 type ServiceFactory interface {
-	Create(provider ServiceProvider) (ServiceInstance, error)
+	Factory() ServiceFactoryFunc
 	Requirements() []reflect.Type
 	DisplayName() string
 }

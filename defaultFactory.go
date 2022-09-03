@@ -15,6 +15,23 @@ type defaultFactory struct {
 	displayName  string
 }
 
+// ServiceFactory interface implementation
+
+// Create implements ServiceFactory.Create to create a new instance of the service.
+func (fact *defaultFactory) Factory() ServiceFactoryFunc {
+	return fact.factoryFunc
+}
+
+// DisplayName implements ServiceFactory.DisplayName to return the service's display name.
+func (fact *defaultFactory) DisplayName() string {
+	return fact.displayName
+}
+
+// Requirements implements ServiceFactory.Requirements to return the service's requirements.
+func (fact *defaultFactory) Requirements() []reflect.Type {
+	return slices.Clone(fact.requirements)
+}
+
 // NewServiceInstanceFactoryWith creates a new service factory from the given factory function.
 // parameters:
 // 	factoryFunc - the factory function to create the service
@@ -155,6 +172,7 @@ func newInstanceFactoryWith(displayName string, instance any) (ServiceFactory, e
 }
 
 func getInstanceName(instance any) string {
+	if isNil(instance) { return "<nil>" }
 	stringer, ok := instance.(fmt.Stringer)
 	if ok {
 		return stringer.String()
@@ -172,21 +190,4 @@ func getInstanceName(instance any) string {
 // 	the new service factory
 func newInstanceFactory(instance any) (ServiceFactory, error) {
 	return newInstanceFactoryWith(getInstanceName(instance), instance)
-}
-
-// ServiceFactory interface implementation
-
-// Create implements ServiceFactory.Create to create a new instance of the service.
-func (fact *defaultFactory) Create(provider ServiceProvider) (ServiceInstance, error) {
-	return fact.factoryFunc(provider)
-}
-
-// DisplayName implements ServiceFactory.DisplayName to return the service's display name.
-func (fact *defaultFactory) DisplayName() string {
-	return fact.displayName
-}
-
-// Requirements implements ServiceFactory.Requirements to return the service's requirements.
-func (fact *defaultFactory) Requirements() []reflect.Type {
-	return slices.Clone(fact.requirements)
 }

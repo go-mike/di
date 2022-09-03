@@ -1,493 +1,378 @@
 package di
 
-// import (
-// 	"reflect"
-// 	"testing"
+import (
+	"reflect"
+	"testing"
 
-// 	"github.com/stretchr/testify/assert"
-// )
-
-// type testServiceInterface any
-// type testServiceFactoryFunc struct{}
-// func (*testServiceFactoryFunc) Create(provider ServiceProvider) (ServiceInstance, error) {
-// 	panic("unimplemented")
-// }
-// func (*testServiceFactoryFunc) DisplayName() string {
-// 	panic("unimplemented")
-// }
-// func (*testServiceFactoryFunc) Requirements() []reflect.Type {
-// 	panic("unimplemented")
-// }
-
-// func TestNewDescriptorForType(t *testing.T) {
-// 	// Given
-// 	factory := testServiceFactoryFunc{}
-// 	// When
-// 	descriptor := NewDescriptorForType(
-// 		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
-// 		Scoped,
-// 		&factory)
-
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Scoped, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.Equal(t, &factory, descriptor.Factory())
-// }
-
-// func TestNewDescriptor(t *testing.T) {
-// 	// Given
-// 	factory := testServiceFactoryFunc{}
-// 	// When
-// 	descriptor := NewDescriptor[testServiceInterface](Scoped, &factory)
-
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Scoped, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.Equal(t, &factory, descriptor.Factory())
-// }
-
-// func TestNewDescriptorForTypeExplicitFactory(t *testing.T) {
-// 	// Given
-// 	requirements := []reflect.Type{
-// 		reflect.TypeOf(int(0)),
-// 		reflect.TypeOf(string("")),
-// 		reflect.TypeOf((*error)(nil)).Elem(),
-// 	}
-// 	// Given
-// 	displayName := "some service name"
-// 	// When
-// 	descriptor := NewDescriptorForTypeExplicitFactory(
-// 		reflect.TypeOf((*testServiceInterface)(nil)).Elem(), Scoped,
-// 		testFactoryFunc, requirements, displayName)
-
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Scoped, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.NotNil(t, descriptor.Factory())
-// }
+	"github.com/stretchr/testify/assert"
+)
 
 
-// func TestNewSingletonForType(t *testing.T) {
-// 	// Given
-// 	factory := testServiceFactoryFunc{}
-// 	// When
-// 	descriptor := NewSingletonForType(
-// 		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
-// 		&factory)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Singleton, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.Equal(t, &factory, descriptor.Factory())
-// }
+func TestNewDescriptorForType_OnInterface(t *testing.T) {
+	factory := &testServiceFactoryFunc{}
+	descriptor := NewDescriptorForType(
+		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
+		Scoped, factory)
 
-// func TestNewSingleton(t *testing.T) {
-// 	// Given
-// 	factory := testServiceFactoryFunc{}
-// 	// When
-// 	descriptor := NewSingleton[testServiceInterface](&factory)
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Scoped, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.Equal(t, factory, descriptor.Factory())
+}
 
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Singleton, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.Equal(t, &factory, descriptor.Factory())
-// }
+func TestNewDescriptorForType_OnStructPtr(t *testing.T) {
+	factory := &testServiceFactoryFunc{}
+	descriptor := NewDescriptorForType(
+		reflect.TypeOf((*testServiceStruct)(nil)),
+		Scoped, factory)
 
-// func TestNewSingletonFactoryForType(t *testing.T) {
-// 	// When
-// 	descriptor := NewSingletonFactoryForType(
-// 		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
-// 		testFactoryFunc)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Singleton, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.NotNil(t, descriptor.Factory())
-// }
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Scoped, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceStruct)(nil)), descriptor.ServiceType())
+	assert.Equal(t, factory, descriptor.Factory())
+}
 
-// func TestNewSingletonFactory(t *testing.T) {
-// 	// When
-// 	descriptor := NewSingletonFactory[testServiceInterface](testFactoryFunc)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Singleton, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.NotNil(t, descriptor.Factory())
-// }
+func TestNewDescriptorForType_OnStruct(t *testing.T) {
+	factory := &testServiceFactoryFunc{}
+	descriptor := NewDescriptorForType(
+		reflect.TypeOf(testServiceStruct{}),
+		Scoped, factory)
 
-// func TestNewSingletonStructForType(t *testing.T) {
-// 	// When
-// 	descriptor, err := NewSingletonStructForType(
-// 		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
-// 		reflect.TypeOf(testStructWithFields{}))
-// 	// Then
-// 	assert.Nil(t, err)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Singleton, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.NotNil(t, descriptor.Factory())
-// }
-
-// func TestNewSingletonStructForType_OnNil(t *testing.T) {
-// 	// When
-// 	descriptor, err := NewSingletonStructForType(
-// 		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
-// 		nil)
-// 	// Then
-// 	assert.NotNil(t, err)
-// 	// Then
-// 	assert.Nil(t, descriptor)
-// }
-
-// func TestNewSingletonStruct(t *testing.T) {
-// 	// Wh	, en
-// 	descriptor, err := NewSingletonStruct[testServiceInterface, testStructWithFields]()
-// 	// Then
-// 	assert.Nil(t, err)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Singleton, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.NotNil(t, descriptor.Factory())
-// }
-
-// func TestNewSingletonStruct_OnOtherType(t *testing.T) {
-// 	// Wh	, en
-// 	descriptor, err := NewSingletonStruct[testServiceInterface, int]()
-// 	// Then
-// 	assert.NotNil(t, err)
-// 	// Then
-// 	assert.Nil(t, descriptor)
-// }
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Scoped, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf(testServiceStruct{}), descriptor.ServiceType())
+	assert.Equal(t, factory, descriptor.Factory())
+}
 
 
-// func TestNewScopedForType(t *testing.T) {
-// 	// Given
-// 	factory := testServiceFactoryFunc{}
-// 	// When
-// 	descriptor := NewScopedForType(
-// 		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
-// 		&factory)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Scoped, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.Equal(t, &factory, descriptor.Factory())
-// }
+func TestNewDescriptor_OnInterface(t *testing.T) {
+	factory := &testServiceFactoryFunc{}
+	descriptor := NewDescriptor[testServiceInterface](Scoped, factory)
 
-// func TestNewScoped(t *testing.T) {
-// 	// Given
-// 	factory := testServiceFactoryFunc{}
-// 	// When
-// 	descriptor := NewScoped[testServiceInterface](&factory)
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Scoped, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.Equal(t, factory, descriptor.Factory())
+}
 
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Scoped, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.Equal(t, &factory, descriptor.Factory())
-// }
+func TestNewDescriptor_OnStructPtr(t *testing.T) {
+	factory := &testServiceFactoryFunc{}
+	descriptor := NewDescriptor[*testServiceStruct](Scoped, factory)
 
-// func TestNewScopedFactoryForType(t *testing.T) {
-// 	// When
-// 	descriptor := NewScopedFactoryForType(
-// 		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
-// 		testFactoryFunc)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Scoped, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.NotNil(t, descriptor.Factory())
-// }
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Scoped, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceStruct)(nil)), descriptor.ServiceType())
+	assert.Equal(t, factory, descriptor.Factory())
+}
 
-// func TestNewScopedFactory(t *testing.T) {
-// 	// When
-// 	descriptor := NewScopedFactory[testServiceInterface](testFactoryFunc)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Scoped, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.NotNil(t, descriptor.Factory())
-// }
+func TestNewDescriptor_OnStruct(t *testing.T) {
+	factory := &testServiceFactoryFunc{}
+	descriptor := NewDescriptor[testServiceStruct](Scoped, factory)
 
-// func TestNewScopedStructForType(t *testing.T) {
-// 	// When
-// 	descriptor, err := NewScopedStructForType(
-// 		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
-// 		reflect.TypeOf(testStructWithFields{}))
-// 	// Then
-// 	assert.Nil(t, err)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Scoped, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.NotNil(t, descriptor.Factory())
-// }
-
-// func TestNewScopedStructForType_OnNil(t *testing.T) {
-// 	// When
-// 	descriptor, err := NewScopedStructForType(
-// 		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
-// 		nil)
-// 	// Then
-// 	assert.NotNil(t, err)
-// 	// Then
-// 	assert.Nil(t, descriptor)
-// }
-
-// func TestNewScopedStruct(t *testing.T) {
-// 	// Wh	, en
-// 	descriptor, err := NewScopedStruct[testServiceInterface, testStructWithFields]()
-// 	// Then
-// 	assert.Nil(t, err)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Scoped, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.NotNil(t, descriptor.Factory())
-// }
-
-// func TestNewScopedStruct_OnOtherType(t *testing.T) {
-// 	// Wh	, en
-// 	descriptor, err := NewScopedStruct[testServiceInterface, int]()
-// 	// Then
-// 	assert.NotNil(t, err)
-// 	// Then
-// 	assert.Nil(t, descriptor)
-// }
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Scoped, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf(testServiceStruct{}), descriptor.ServiceType())
+	assert.Equal(t, factory, descriptor.Factory())
+}
 
 
-// func TestNewTransientForType(t *testing.T) {
-// 	// Given
-// 	factory := testServiceFactoryFunc{}
-// 	// When
-// 	descriptor := NewTransientForType(
-// 		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
-// 		&factory)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Transient, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.Equal(t, &factory, descriptor.Factory())
-// }
+func TestNewSingletonServiceFactoryForType(t *testing.T) {
+	factory := &testServiceFactoryFunc{}
+	descriptor := NewSingletonServiceFactoryForType(
+		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
+		factory)
 
-// func TestNewTransient(t *testing.T) {
-// 	// Given
-// 	factory := testServiceFactoryFunc{}
-// 	// When
-// 	descriptor := NewTransient[testServiceInterface](&factory)
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Singleton, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.Equal(t, factory, descriptor.Factory())
+}
 
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Transient, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.Equal(t, &factory, descriptor.Factory())
-// }
+func TestNewSingletonServiceFactory(t *testing.T) {
+	factory := &testServiceFactoryFunc{}
+	descriptor := NewSingletonServiceFactory[testServiceInterface](factory)
 
-// func TestNewTransientFactoryForType(t *testing.T) {
-// 	// When
-// 	descriptor := NewTransientFactoryForType(
-// 		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
-// 		testFactoryFunc)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Transient, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.NotNil(t, descriptor.Factory())
-// }
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Singleton, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.Equal(t, factory, descriptor.Factory())
+}
 
-// func TestNewTransientFactory(t *testing.T) {
-// 	// When
-// 	descriptor := NewTransientFactory[testServiceInterface](testFactoryFunc)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Transient, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.NotNil(t, descriptor.Factory())
-// }
+func TestNewSingletonFactoryForType(t *testing.T) {
+	factory := func(provider ServiceProvider) (any, error) {
+		panic("not needed for test")
+	}
+	descriptor := NewSingletonFactoryForType(
+		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
+		factory)
 
-// func TestNewTransientStructForType(t *testing.T) {
-// 	// When
-// 	descriptor, err := NewTransientStructForType(
-// 		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
-// 		reflect.TypeOf(testStructWithFields{}))
-// 	// Then
-// 	assert.Nil(t, err)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Transient, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.NotNil(t, descriptor.Factory())
-// }
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Singleton, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.NotNil(t, descriptor.Factory())
+}
 
-// func TestNewTransientStructForType_OnNil(t *testing.T) {
-// 	// When
-// 	descriptor, err := NewTransientStructForType(
-// 		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
-// 		nil)
-// 	// Then
-// 	assert.NotNil(t, err)
-// 	// Then
-// 	assert.Nil(t, descriptor)
-// }
+func TestNewSingletonFactory(t *testing.T) {
+	factory := func(provider ServiceProvider) (any, error) {
+		panic("not needed for test")
+	}
+	descriptor := NewSingletonFactory[testServiceInterface](factory)
 
-// func TestNewTransientStruct(t *testing.T) {
-// 	// Wh	, en
-// 	descriptor, err := NewTransientStruct[testServiceInterface, testStructWithFields]()
-// 	// Then
-// 	assert.Nil(t, err)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Transient, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.NotNil(t, descriptor.Factory())
-// }
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Singleton, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.NotNil(t, descriptor.Factory())
+}
 
-// func TestNewTransientStruct_OnOtherType(t *testing.T) {
-// 	// Wh	, en
-// 	descriptor, err := NewTransientStruct[testServiceInterface, int]()
-// 	// Then
-// 	assert.NotNil(t, err)
-// 	// Then
-// 	assert.Nil(t, descriptor)
-// }
+func TestNewSingletonStructForType(t *testing.T) {
+	descriptor, err := NewSingletonStructForType(
+		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
+		reflect.TypeOf(testServiceStruct{}))
+
+	assert.Nil(t, err)
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Singleton, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.NotNil(t, descriptor.Factory())
+}
+
+func TestNewSingletonStructForType_OnNonStruct(t *testing.T) {
+	descriptor, err := NewSingletonStructForType(
+		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
+		reflect.TypeOf(0))
+
+	assert.NotNil(t, err)
+	assert.Nil(t, descriptor)
+}
+
+func TestNewSingletonStruct(t *testing.T) {
+	descriptor, err := NewSingletonStruct[testServiceInterface, testServiceStruct]()
+
+	assert.Nil(t, err)
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Singleton, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.NotNil(t, descriptor.Factory())
+}
+
+func TestNewSingletonStruct_OnNonStruct(t *testing.T) {
+	descriptor, err := NewSingletonStruct[testServiceInterface, int64]()
+
+	assert.NotNil(t, err)
+	assert.Nil(t, descriptor)
+}
 
 
-// type testInstanceInterface any
-// type testInstanceImpl struct{}
+func TestNewScopedServiceFactoryForType(t *testing.T) {
+	factory := &testServiceFactoryFunc{}
+	descriptor := NewScopedServiceFactoryForType(
+		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
+		factory)
 
-// func TestNewInstanceForType(t *testing.T) {
-// 	// Given
-// 	instance := testInstanceImpl{}
-// 	// When
-// 	descriptor, err := NewInstanceForType(
-// 		reflect.TypeOf((*testInstanceInterface)(nil)).Elem(),
-// 		&instance)
-// 	// Then
-// 	assert.Nil(t, err)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Singleton, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testInstanceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.NotNil(t, descriptor.Factory())
-// 	// When
-// 	serviceInstance, err := descriptor.Factory().Create(nil)
-// 	// Then
-// 	assert.Nil(t, err)
-// 	// Then
-// 	assert.Same(t, &instance, serviceInstance.Instance)
-// }
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Scoped, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.Equal(t, factory, descriptor.Factory())
+}
 
-// func TestNewInstanceForType_OnNilInstance(t *testing.T) {
-// 	// When
-// 	descriptor, err := NewInstanceForType(
-// 		reflect.TypeOf((*testInstanceInterface)(nil)).Elem(),
-// 		nil)
-// 	// Then
-// 	assert.Same(t, ErrInvalidInstance, err)
-// 	// Then
-// 	assert.Nil(t, descriptor)
-// }
+func TestNewScopedServiceFactory(t *testing.T) {
+	factory := &testServiceFactoryFunc{}
+	descriptor := NewScopedServiceFactory[testServiceInterface](factory)
 
-// func TestNewInstance(t *testing.T) {
-// 	// Given
-// 	instance := testInstanceImpl{}
-// 	// When
-// 	descriptor, err := NewInstance[testInstanceInterface](&instance)
-// 	// Then
-// 	assert.Nil(t, err)
-// 	// Then
-// 	assert.NotNil(t, descriptor)
-// 	// Then
-// 	assert.Equal(t, Singleton, descriptor.Lifetime())
-// 	// Then
-// 	assert.Equal(t, reflect.TypeOf((*testInstanceInterface)(nil)).Elem(), descriptor.ServiceType())
-// 	// Then
-// 	assert.NotNil(t, descriptor.Factory())
-// 	// When
-// 	serviceInstance, err := descriptor.Factory().Create(nil)
-// 	// Then
-// 	assert.Nil(t, err)
-// 	// Then
-// 	assert.Same(t, &instance, serviceInstance.Instance)
-// }
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Scoped, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.Equal(t, factory, descriptor.Factory())
+}
 
-// func TestNewInstance_OnNilInstance(t *testing.T) {
-// 	// When
-// 	descriptor, err := NewInstance[testInstanceInterface](nil)
-// 	// Then
-// 	assert.Same(t, ErrInvalidInstance, err)
-// 	// Then
-// 	assert.Nil(t, descriptor)
-// }
+func TestNewScopedFactoryForType(t *testing.T) {
+	factory := func(provider ServiceProvider) (any, error) {
+		panic("not needed for test")
+	}
+	descriptor := NewScopedFactoryForType(
+		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
+		factory)
+
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Scoped, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.NotNil(t, descriptor.Factory())
+}
+
+func TestNewScopedFactory(t *testing.T) {
+	factory := func(provider ServiceProvider) (any, error) {
+		panic("not needed for test")
+	}
+	descriptor := NewScopedFactory[testServiceInterface](factory)
+
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Scoped, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.NotNil(t, descriptor.Factory())
+}
+
+func TestNewScopedStructForType(t *testing.T) {
+	descriptor, err := NewScopedStructForType(
+		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
+		reflect.TypeOf(testServiceStruct{}))
+
+	assert.Nil(t, err)
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Scoped, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.NotNil(t, descriptor.Factory())
+}
+
+func TestNewScopedStructForType_OnNonStruct(t *testing.T) {
+	descriptor, err := NewScopedStructForType(
+		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
+		reflect.TypeOf(0))
+
+	assert.NotNil(t, err)
+	assert.Nil(t, descriptor)
+}
+
+func TestNewScopedStruct(t *testing.T) {
+	descriptor, err := NewScopedStruct[testServiceInterface, testServiceStruct]()
+
+	assert.Nil(t, err)
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Scoped, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.NotNil(t, descriptor.Factory())
+}
+
+func TestNewScopedStruct_OnNonStruct(t *testing.T) {
+	descriptor, err := NewScopedStruct[testServiceInterface, int64]()
+
+	assert.NotNil(t, err)
+	assert.Nil(t, descriptor)
+}
+
+
+func TestNewTransientServiceFactoryForType(t *testing.T) {
+	factory := &testServiceFactoryFunc{}
+	descriptor := NewTransientServiceFactoryForType(
+		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
+		factory)
+
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Transient, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.Equal(t, factory, descriptor.Factory())
+}
+
+func TestNewTransientServiceFactory(t *testing.T) {
+	factory := &testServiceFactoryFunc{}
+	descriptor := NewTransientServiceFactory[testServiceInterface](factory)
+
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Transient, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.Equal(t, factory, descriptor.Factory())
+}
+
+func TestNewTransientFactoryForType(t *testing.T) {
+	factory := func(provider ServiceProvider) (any, error) {
+		panic("not needed for test")
+	}
+	descriptor := NewTransientFactoryForType(
+		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
+		factory)
+
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Transient, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.NotNil(t, descriptor.Factory())
+}
+
+func TestNewTransientFactory(t *testing.T) {
+	factory := func(provider ServiceProvider) (any, error) {
+		panic("not needed for test")
+	}
+	descriptor := NewTransientFactory[testServiceInterface](factory)
+
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Transient, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.NotNil(t, descriptor.Factory())
+}
+
+func TestNewTransientStructForType(t *testing.T) {
+	descriptor, err := NewTransientStructForType(
+		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
+		reflect.TypeOf(testServiceStruct{}))
+
+	assert.Nil(t, err)
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Transient, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.NotNil(t, descriptor.Factory())
+}
+
+func TestNewTransientStructForType_OnNonStruct(t *testing.T) {
+	descriptor, err := NewTransientStructForType(
+		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
+		reflect.TypeOf(0))
+
+		assert.NotNil(t, err)
+		assert.Nil(t, descriptor)
+	}
+
+func TestNewTransientStruct(t *testing.T) {
+	descriptor, err := NewTransientStruct[testServiceInterface, testServiceStruct]()
+
+	assert.Nil(t, err)
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Transient, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.NotNil(t, descriptor.Factory())
+}
+
+func TestNewTransientStruct_OnNonStruct(t *testing.T) {
+	descriptor, err := NewTransientStruct[testServiceInterface, int64]()
+
+	assert.NotNil(t, err)
+	assert.Nil(t, descriptor)
+}
+
+
+func TestNewInstanceForType(t *testing.T) {
+	instance := &testServiceStruct{}
+	descriptor, err := NewInstanceForType(
+		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
+		instance)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Singleton, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.NotNil(t, descriptor.Factory())
+}
+
+func TestNewInstanceForType_OnNil(t *testing.T) {
+	descriptor, err := NewInstanceForType(
+		reflect.TypeOf((*testServiceInterface)(nil)).Elem(),
+		nil)
+
+		assert.NotNil(t, err)
+		assert.Nil(t, descriptor)
+	}
+
+func TestNewInstance(t *testing.T) {
+	instance := &testServiceStruct{}
+	descriptor, err := NewInstance[testServiceInterface](instance)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, descriptor)
+	assert.Equal(t, Singleton, descriptor.Lifetime())
+	assert.Equal(t, reflect.TypeOf((*testServiceInterface)(nil)).Elem(), descriptor.ServiceType())
+	assert.NotNil(t, descriptor.Factory())
+}
+
+func TestNewInstance_OnNil(t *testing.T) {
+	descriptor, err := NewInstance[testServiceInterface](nil)
+
+	assert.NotNil(t, err)
+	assert.Nil(t, descriptor)
+}
