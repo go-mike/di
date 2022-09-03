@@ -50,7 +50,7 @@ func TestFindSlice(t *testing.T) {
 	assert.Equal(t, expected, *actual)
 }
 
-func TestFindSliceNotFound(t *testing.T) {
+func TestFindSlice_NotFound(t *testing.T) {
 	source := rangeSlice(1, 5)
 	actual := findSlice(source, func(item int) bool {
 		return item == 6

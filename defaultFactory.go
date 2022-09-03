@@ -9,51 +9,64 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type explicitFactory struct {
+type defaultFactory struct {
 	factoryFunc  ServiceFactoryFunc
 	requirements []reflect.Type
 	displayName  string
 }
 
-// NewDisposableExplicitFactory creates a new service factory from the given factory function.
+// NewServiceInstanceFactoryWith creates a new service factory from the given factory function.
 // parameters:
 // 	factoryFunc - the factory function to create the service
 // 	requirements - the service's requirements
 // 	displayName - the service's display name
 // returns:
 // 	the new service factory
-func NewDisposableExplicitFactory(
-	factoryFunc ServiceFactoryFunc,
+func NewServiceInstanceFactoryWith(
+	displayName string,
 	requirements []reflect.Type,
-	displayName string) ServiceFactory {
-	return &explicitFactory {
+	factoryFunc ServiceFactoryFunc) ServiceFactory {
+	return &defaultFactory {
 		factoryFunc:  factoryFunc,
 		requirements: requirements,
 		displayName:  displayName,
 	}
 }
 
-// NewExplicitFactory creates a new service factory from the given factory function.
+// NewFactoryWith creates a new service factory from the given factory function.
 // parameters:
 // 	factoryFunc - the factory function to create the service
 // 	requirements - the service's requirements
 // 	displayName - the service's display name
 // returns:
 // 	the new service factory
-func NewExplicitFactory(
-	factoryFunc SimpleServiceFactoryFunc,
+func NewFactoryWith(
+	displayName string,
 	requirements []reflect.Type,
-	displayName string) ServiceFactory {
-	return NewDisposableExplicitFactory(factoryFunc.toDisposable(), requirements, displayName)
+	factoryFunc SimpleServiceFactoryFunc) ServiceFactory {
+	return NewServiceInstanceFactoryWith(
+		displayName,
+		requirements,
+		toServiceInstanceFactoryFunc(factoryFunc))
 }
 
-// NewDisposableFactory creates a new service factory from the given factory function.
+func getFunctionName(function any) string {
+	valueOfFunc := reflect.ValueOf(function)
+	fullName := runtime.FuncForPC(valueOfFunc.Pointer()).Name()
+	fullNameSplit := strings.Split(fullName, ".")
+	return fullNameSplit[len(fullNameSplit)-1]
+}
+
+// NewServiceInstanceFactory creates a new service factory from the given factory function.
 // parameters:
 // 	factoryFunc - the factory function to create the service
 // returns:
 // 	the new service factory
-func NewDisposableFactory(factoryFunc ServiceFactoryFunc) ServiceFactory {
-	return NewDisposableExplicitFactory(factoryFunc, []reflect.Type{}, "<Factory>")
+func NewServiceInstanceFactory(factoryFunc ServiceFactoryFunc) ServiceFactory {
+	return NewServiceInstanceFactoryWith(
+		getFunctionName(factoryFunc),
+		[]reflect.Type{},
+		factoryFunc)
 }
 
 // NewFactory creates a new service factory from the given factory function.
@@ -62,7 +75,10 @@ func NewDisposableFactory(factoryFunc ServiceFactoryFunc) ServiceFactory {
 // returns:
 // 	the new service factory
 func NewFactory(factoryFunc SimpleServiceFactoryFunc) ServiceFactory {
-	return NewDisposableFactory(factoryFunc.toDisposable())
+	return NewServiceInstanceFactoryWith(
+		getFunctionName(factoryFunc),
+		[]reflect.Type{},
+		toServiceInstanceFactoryFunc(factoryFunc))
 }
 
 // NewStructFactoryForType creates a new service factory from the given struct type.
@@ -81,7 +97,7 @@ func NewStructFactoryForType(structType reflect.Type) (ServiceFactory, error) {
 			return structType.Field(i).Type
 		})
 
-	return NewDisposableExplicitFactory(factory, requirements, displayName), nil
+	return NewServiceInstanceFactoryWith(displayName, requirements, factory), nil
 }
 
 // NewStructFactory creates a new service factory from the given struct type.
@@ -104,17 +120,48 @@ func NewFuncFactory(function any) (ServiceFactory, error) {
 
 	funcType := reflect.TypeOf(function)
 
-	valueOfFunc := reflect.ValueOf(function)
-	fullName := runtime.FuncForPC(valueOfFunc.Pointer()).Name()
-	fullNameSplit := strings.Split(fullName, ".")
-	displayName := fullNameSplit[len(fullNameSplit)-1]
-
 	requirements := rangeMapSlice(0, funcType.NumIn(),
 		func (i int) reflect.Type {
 			return funcType.In(i)
 		})
 
-	return NewDisposableExplicitFactory(factory, requirements, displayName), nil
+	return NewServiceInstanceFactoryWith(
+		getFunctionName(function),
+		requirements, 
+		factory), nil
+}
+
+// newInstanceFactoryWith creates a new service factory from the given instance.
+// Only singletons are supported.
+// parameters:
+//  displayName - the display name of the service
+// 	function - the function to create the service from
+// returns:
+// 	the new service factory
+func newInstanceFactoryWith(displayName string, instance any) (ServiceFactory, error) {
+	if instance == nil {
+		return nil, ErrInvalidInstance
+	}
+	instanceType := reflect.TypeOf(instance)
+	if instanceType.Kind() != reflect.Ptr {
+		return nil, ErrInvalidInstance
+	}
+
+	factory := func (provider ServiceProvider) (any, error) {
+		return instance, nil
+	}
+
+	return NewFactoryWith(displayName, []reflect.Type{}, factory), nil
+}
+
+func getInstanceName(instance any) string {
+	stringer, ok := instance.(fmt.Stringer)
+	if ok {
+		return stringer.String()
+	} else {
+		instanceType := reflect.TypeOf(instance)
+		return fmt.Sprintf("<%s Instance>", instanceType.Elem().Name())
+	}
 }
 
 // newInstanceFactory creates a new service factory from the given instance.
@@ -124,42 +171,22 @@ func NewFuncFactory(function any) (ServiceFactory, error) {
 // returns:
 // 	the new service factory
 func newInstanceFactory(instance any) (ServiceFactory, error) {
-	if instance == nil {
-		return nil, ErrInvalidInstance
-	}
-	instanceType := reflect.TypeOf(instance)
-	if instanceType.Kind() != reflect.Ptr {
-		return nil, ErrInvalidInstance
-	}
-
-	var displayName string
-	stringer, ok := instance.(fmt.Stringer)
-	if ok {
-		displayName = stringer.String()
-	} else {
-		displayName = fmt.Sprintf("<%s Instance>", instanceType.Elem().Name())
-	}
-
-	factory := func (provider ServiceProvider) (any, error) {
-		return instance, nil
-	}
-
-	return NewExplicitFactory(factory, []reflect.Type{}, displayName), nil
+	return newInstanceFactoryWith(getInstanceName(instance), instance)
 }
 
 // ServiceFactory interface implementation
 
 // Create implements ServiceFactory.Create to create a new instance of the service.
-func (fact *explicitFactory) Create(provider ServiceProvider) (ServiceInstance, error) {
+func (fact *defaultFactory) Create(provider ServiceProvider) (ServiceInstance, error) {
 	return fact.factoryFunc(provider)
 }
 
 // DisplayName implements ServiceFactory.DisplayName to return the service's display name.
-func (fact *explicitFactory) DisplayName() string {
+func (fact *defaultFactory) DisplayName() string {
 	return fact.displayName
 }
 
 // Requirements implements ServiceFactory.Requirements to return the service's requirements.
-func (fact *explicitFactory) Requirements() []reflect.Type {
+func (fact *defaultFactory) Requirements() []reflect.Type {
 	return slices.Clone(fact.requirements)
 }
