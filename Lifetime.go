@@ -5,7 +5,7 @@ import "fmt"
 type Lifetime int
 
 const (
-	Unknown Lifetime = iota
+	UnknownLifetime Lifetime = iota
 	Singleton
 	Scoped
 	Transient

@@ -44,9 +44,7 @@ func NewDescriptorForType(serviceType reflect.Type, lifetime Lifetime, factory S
 
 // NewDescriptor creates a new service descriptor for the given service type.
 func NewDescriptor[T any](lifetime Lifetime, factory ServiceFactory) ServiceDescriptor {
-	return NewDescriptorForType(
-		reflect.TypeOf((*T)(nil)).Elem(),
-		lifetime, factory)
+	return NewDescriptorForType(typeOf[T](), lifetime, factory)
 }
 
 

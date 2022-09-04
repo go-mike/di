@@ -43,7 +43,7 @@ func TestNewServiceInstanceFactoryWith(t *testing.T) {
 	assert.Equal(t, expectedFieldRequirements, factory.Requirements())
 
 	instance, err := factory.Factory()(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, instance.Instance)
 	assert.NotNil(t, instance.Disposable)
 	assert.IsType(t, &testServiceStruct{}, instance.Instance)
@@ -61,7 +61,7 @@ func TestNewFactoryWith(t *testing.T) {
 	assert.Equal(t, expectedFieldRequirements, factory.Requirements())
 
 	instance, err := factory.Factory()(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, instance.Instance)
 	assert.NotNil(t, instance.Disposable)
 	assert.IsType(t, &testServiceStruct{}, instance.Instance)
@@ -78,7 +78,7 @@ func TestNewServiceInstanceFactory(t *testing.T) {
 	assert.Equal(t, []reflect.Type{}, factory.Requirements())
 
 	instance, err := factory.Factory()(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, instance.Instance)
 	assert.NotNil(t, instance.Disposable)
 	assert.IsType(t, &testServiceStruct{}, instance.Instance)
@@ -95,7 +95,7 @@ func TestNewFactory(t *testing.T) {
 	assert.Equal(t, []reflect.Type{}, factory.Requirements())
 
 	instance, err := factory.Factory()(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, instance.Instance)
 	assert.NotNil(t, instance.Disposable)
 	assert.IsType(t, &testServiceStruct{}, instance.Instance)
@@ -103,15 +103,15 @@ func TestNewFactory(t *testing.T) {
 
 
 func TestNewStructFactoryForType(t *testing.T) {
-	factory, err := NewStructFactoryForType(reflect.TypeOf(testStructWithFields{}))
+	factory, err := NewStructFactoryForType(typeOfTestStructWithFields)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	assert.Equal(t, "testStructWithFields", factory.DisplayName())
 	assert.Equal(t, expectedFieldRequirements, factory.Requirements())
 
 	instance, err := factory.Factory()(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, instance.Instance)
 	assert.NotNil(t, instance.Disposable)
 	assert.Equal(t, &expectedStructWithFields, instance.Instance)
@@ -120,7 +120,7 @@ func TestNewStructFactoryForType(t *testing.T) {
 func TestNewStructFactoryForType_OnNil(t *testing.T) {
 	factory, err := NewStructFactoryForType(nil)
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, factory)
 }
 
@@ -128,13 +128,13 @@ func TestNewStructFactoryForType_OnNil(t *testing.T) {
 func TestNewStructFactory(t *testing.T) {
 	factory, err := NewStructFactory[testStructWithFields]()
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	assert.Equal(t, "testStructWithFields", factory.DisplayName())
 	assert.Equal(t, expectedFieldRequirements, factory.Requirements())
 
 	instance, err := factory.Factory()(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, instance.Instance)
 	assert.NotNil(t, instance.Disposable)
 	assert.Equal(t, &expectedStructWithFields, instance.Instance)
@@ -143,7 +143,7 @@ func TestNewStructFactory(t *testing.T) {
 func TestNewStructFactory_OnNil(t *testing.T) {
 	factory, err := NewStructFactory[int64]()
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, factory)
 }
 
@@ -151,13 +151,13 @@ func TestNewStructFactory_OnNil(t *testing.T) {
 func TestNewFuncFactory(t *testing.T) {
 	factory, err := NewFuncFactory(testFuncFactoryWithError)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	assert.Equal(t, "testFuncFactoryWithError", factory.DisplayName())
 	assert.Equal(t, expectedFieldRequirements, factory.Requirements())
 
 	instance, err := factory.Factory()(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, instance.Instance)
 	assert.NotNil(t, instance.Disposable)
 	assert.Equal(t, &expectedStructWithFields, instance.Instance)
@@ -166,7 +166,7 @@ func TestNewFuncFactory(t *testing.T) {
 func TestNewFuncFactory_OnNil(t *testing.T) {
 	factory, err := NewFuncFactory(nil)
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, factory)
 }
 
@@ -177,13 +177,13 @@ func TestNewInstanceFactoryWith(t *testing.T) {
 
 	factory, err := newInstanceFactoryWith(displayName, instance)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	assert.Equal(t, displayName, factory.DisplayName())
 	assert.Equal(t, []reflect.Type{}, factory.Requirements())
 
 	actualInstance, err := factory.Factory()(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, actualInstance.Instance)
 	assert.NotNil(t, actualInstance.Disposable)
 	assert.Equal(t, &expectedStructWithFields, actualInstance.Instance)
@@ -195,13 +195,13 @@ func TestNewInstanceFactoryWith_OnInterface(t *testing.T) {
 
 	factory, err := newInstanceFactoryWith(displayName, instance)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	assert.Equal(t, displayName, factory.DisplayName())
 	assert.Equal(t, []reflect.Type{}, factory.Requirements())
 
 	actualInstance, err := factory.Factory()(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, actualInstance.Instance)
 	assert.NotNil(t, actualInstance.Disposable)
 	assert.Equal(t, instance, actualInstance.Instance)
@@ -213,7 +213,7 @@ func TestNewInstanceFactoryWith_OnStruct(t *testing.T) {
 
 	factory, err := newInstanceFactoryWith(displayName, instance)
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, factory)
 }
 
@@ -222,7 +222,7 @@ func TestNewInstanceFactoryWith_OnNil(t *testing.T) {
 
 	factory, err := newInstanceFactoryWith(displayName, nil)
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, factory)
 }
 
@@ -233,13 +233,13 @@ func TestNewInstanceFactory(t *testing.T) {
 
 	factory, err := newInstanceFactory(instance)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	assert.Equal(t, displayName, factory.DisplayName())
 	assert.Equal(t, []reflect.Type{}, factory.Requirements())
 
 	actualInstance, err := factory.Factory()(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, actualInstance.Instance)
 	assert.NotNil(t, actualInstance.Disposable)
 	assert.Equal(t, instance, actualInstance.Instance)
@@ -251,13 +251,13 @@ func TestNewInstanceFactory_NoStringer(t *testing.T) {
 
 	factory, err := newInstanceFactory(instance)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	assert.Equal(t, displayName, factory.DisplayName())
 	assert.Equal(t, []reflect.Type{}, factory.Requirements())
 
 	actualInstance, err := factory.Factory()(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, actualInstance.Instance)
 	assert.NotNil(t, actualInstance.Disposable)
 	assert.Equal(t, instance, actualInstance.Instance)

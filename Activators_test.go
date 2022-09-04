@@ -13,21 +13,50 @@ type testStructWithFields struct {
 	Field2 string
 	Field3 []bool
 }
+
 func (*testStructWithFields) String() string {
 	return "I have fields"
 }
 
 type testStructWithFieldsProvider struct{}
+
 var testBoolSlice = []bool{true, false}
+
+var (
+	typeOfInt       = typeOf[int]()
+	typeOfString    = typeOf[string]()
+	typeOfBoolSlice = typeOf[[]bool]()
+)
+
+var (
+	typeOfTestStructWithFields      = typeOf[testStructWithFields]()
+	typeOfTestStructWithFieldsPtr   = typeOf[*testStructWithFields]()
+	typeOfTestServiceInterface      = typeOf[testServiceInterface]()
+	typeOfTestServiceStruct         = typeOf[testServiceStruct]()
+	typeOfTestServiceStructPtr      = typeOf[*testServiceStruct]()
+	typeOfTestDummyDisposablePtr    = typeOf[*testDummyDisposable]()
+	typeOfTestDummyNonDisposablePtr = typeOf[*testDummyNonDisposable]()
+)
+
 func (*testStructWithFieldsProvider) GetService(serviceType reflect.Type) (any, error) {
-	if serviceType == reflect.TypeOf(int(0)) {
+	if serviceType == typeOfInt {
 		return 42, nil
-	} else if serviceType == reflect.TypeOf(string("")) {
+	} else if serviceType == typeOfString {
 		return "hello", nil
-	} else if serviceType == reflect.TypeOf(testBoolSlice) {
+	} else if serviceType == typeOfBoolSlice {
 		return testBoolSlice, nil
 	}
 	panic("unexpected")
+}
+func (*testStructWithFieldsProvider) GetServiceInfo(serviceType reflect.Type) ServiceInfo {
+	if serviceType == typeOfInt {
+		return newServiceInfo(typeOfInt, true, Singleton)
+	} else if serviceType == typeOfString {
+		return newServiceInfo(typeOfString, true, Singleton)
+	} else if serviceType == typeOfBoolSlice {
+		return newServiceInfo(typeOfBoolSlice, true, Singleton)
+	}
+	return newNotFoundServiceInfo(serviceType)
 }
 
 var expectedStructWithFields testStructWithFields = testStructWithFields{
@@ -36,9 +65,9 @@ var expectedStructWithFields testStructWithFields = testStructWithFields{
 	Field3: testBoolSlice,
 }
 var expectedFieldRequirements []reflect.Type = []reflect.Type{
-	reflect.TypeOf(0),
-	reflect.TypeOf(""),
-	reflect.TypeOf(testBoolSlice),
+	typeOfInt,
+	typeOfString,
+	typeOfBoolSlice,
 }
 
 type testStructWithFailProvider struct{}
@@ -48,6 +77,9 @@ var errTestFailProvider = errors.New("test fail provider")
 func (*testStructWithFailProvider) GetService(serviceType reflect.Type) (any, error) {
 	return nil, errTestFailProvider
 }
+func (*testStructWithFailProvider) GetServiceInfo(serviceType reflect.Type) ServiceInfo {
+	return newNotFoundServiceInfo(serviceType)
+}
 
 func TestActivateStructFactoryForType_OnNil(t *testing.T) {
 	actual, err := ActivateStructFactoryForType(nil)
@@ -56,17 +88,17 @@ func TestActivateStructFactoryForType_OnNil(t *testing.T) {
 }
 
 func TestActivateStructFactoryForType_OnNonStruct(t *testing.T) {
-	actual, err := ActivateStructFactoryForType(reflect.TypeOf(1))
+	actual, err := ActivateStructFactoryForType(typeOfInt)
 	assert.Nil(t, actual)
 	assert.Equal(t, ErrInvalidStructType, err)
 }
 
 func TestActivateStructFactoryForType(t *testing.T) {
-	factory, err := ActivateStructFactoryForType(reflect.TypeOf(testStructWithFields{}))
-	assert.Nil(t, err)
+	factory, err := ActivateStructFactoryForType(typeOfTestStructWithFields)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	service, err := factory(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, service.Instance)
 	assert.NotNil(t, service.Disposable)
 	assert.IsType(t, &testStructWithFields{}, service.Instance)
@@ -74,8 +106,8 @@ func TestActivateStructFactoryForType(t *testing.T) {
 }
 
 func TestActivateStructFactoryForType_OnFailingProvider(t *testing.T) {
-	factory, err := ActivateStructFactoryForType(reflect.TypeOf(testStructWithFields{}))
-	assert.Nil(t, err)
+	factory, err := ActivateStructFactoryForType(typeOfTestStructWithFields)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	service, err := factory(&testStructWithFailProvider{})
 	assert.Equal(t, errTestFailProvider, err)
@@ -90,25 +122,25 @@ func TestActivateStructSimpleFactoryForType_OnNil(t *testing.T) {
 }
 
 func TestActivateStructSimpleFactoryForType_OnNonStruct(t *testing.T) {
-	actual, err := ActivateStructSimpleFactoryForType(reflect.TypeOf(1))
+	actual, err := ActivateStructSimpleFactoryForType(typeOfInt)
 	assert.Nil(t, actual)
 	assert.Equal(t, ErrInvalidStructType, err)
 }
 
 func TestActivateStructSimpleFactoryForType(t *testing.T) {
-	factory, err := ActivateStructSimpleFactoryForType(reflect.TypeOf(testStructWithFields{}))
-	assert.Nil(t, err)
+	factory, err := ActivateStructSimpleFactoryForType(typeOfTestStructWithFields)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	service, err := factory(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, service)
 	assert.IsType(t, &testStructWithFields{}, service)
 	assert.Equal(t, &expectedStructWithFields, service)
 }
 
 func TestActivateStructSimpleFactoryForType_OnFailingProvider(t *testing.T) {
-	factory, err := ActivateStructSimpleFactoryForType(reflect.TypeOf(testStructWithFields{}))
-	assert.Nil(t, err)
+	factory, err := ActivateStructSimpleFactoryForType(typeOfTestStructWithFields)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	service, err := factory(&testStructWithFailProvider{})
 	assert.Equal(t, errTestFailProvider, err)
@@ -123,10 +155,10 @@ func TestActivateStructFactory_OnNonStruct(t *testing.T) {
 
 func TestActivateStructFactory(t *testing.T) {
 	factory, err := ActivateStructFactory[testStructWithFields]()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	service, err := factory(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, service)
 	assert.IsType(t, &testStructWithFields{}, service)
 	assert.Equal(t, &expectedStructWithFields, service)
@@ -134,7 +166,7 @@ func TestActivateStructFactory(t *testing.T) {
 
 func TestActivateStructFactory_OnFailingProvider(t *testing.T) {
 	factory, err := ActivateStructFactory[testStructWithFields]()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	service, err := factory(&testStructWithFailProvider{})
 	assert.Equal(t, errTestFailProvider, err)
@@ -148,16 +180,14 @@ func TestActivateStructForType_OnNil(t *testing.T) {
 }
 
 func TestActivateStructForType_OnNonStruct(t *testing.T) {
-	service, err := ActivateStructForType(reflect.TypeOf(1), nil)
+	service, err := ActivateStructForType(typeOfInt, nil)
 	assert.Nil(t, service.Instance)
 	assert.Equal(t, ErrInvalidStructType, err)
 }
 
 func TestActivateStructForType(t *testing.T) {
-	service, err := ActivateStructForType(
-		reflect.TypeOf(testStructWithFields{}),
-		&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	service, err := ActivateStructForType(typeOfTestStructWithFields, &testStructWithFieldsProvider{})
+	assert.NoError(t, err)
 	assert.NotNil(t, service.Instance)
 	assert.NotNil(t, service.Disposable)
 	assert.IsType(t, &testStructWithFields{}, service.Instance)
@@ -165,9 +195,7 @@ func TestActivateStructForType(t *testing.T) {
 }
 
 func TestActivateStructForType_OnFailingProvider(t *testing.T) {
-	service, err := ActivateStructForType(
-		reflect.TypeOf(testStructWithFields{}),
-		&testStructWithFailProvider{})
+	service, err := ActivateStructForType(typeOfTestStructWithFields, &testStructWithFailProvider{})
 	assert.Equal(t, errTestFailProvider, err)
 	assert.Nil(t, service.Instance)
 	assert.Nil(t, service.Disposable)
@@ -180,25 +208,21 @@ func TestActivateStructSimple_OnNil(t *testing.T) {
 }
 
 func TestActivateStructSimple_OnNonStruct(t *testing.T) {
-	service, err := ActivateStructSimple(reflect.TypeOf(1), nil)
+	service, err := ActivateStructSimple(typeOfInt, nil)
 	assert.Nil(t, service)
 	assert.Equal(t, ErrInvalidStructType, err)
 }
 
 func TestActivateStructSimple(t *testing.T) {
-	service, err := ActivateStructSimple(
-		reflect.TypeOf(testStructWithFields{}),
-		&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	service, err := ActivateStructSimple(typeOfTestStructWithFields, &testStructWithFieldsProvider{})
+	assert.NoError(t, err)
 	assert.NotNil(t, service)
 	assert.IsType(t, &testStructWithFields{}, service)
 	assert.Equal(t, &expectedStructWithFields, service)
 }
 
 func TestActivateStructSimple_OnFailingProvider(t *testing.T) {
-	service, err := ActivateStructSimple(
-		reflect.TypeOf(testStructWithFields{}),
-		&testStructWithFailProvider{})
+	service, err := ActivateStructSimple(typeOfTestStructWithFields, &testStructWithFailProvider{})
 	assert.Equal(t, errTestFailProvider, err)
 	assert.Nil(t, service)
 	assert.Nil(t, service)
@@ -212,7 +236,7 @@ func TestActivateStruct_OnNonStruct(t *testing.T) {
 
 func TestActivateStruct(t *testing.T) {
 	service, err := ActivateStruct[testStructWithFields](&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, service)
 	assert.IsType(t, &testStructWithFields{}, service)
 	assert.Equal(t, &expectedStructWithFields, service)
@@ -294,10 +318,10 @@ func TestActivateFuncFactoryForType_OnWrongResults(t *testing.T) {
 
 func TestActivateFuncFactoryForType_OnNoErrorResult(t *testing.T) {
 	factory, err := ActivateFuncFactoryForType(testFuncFactoryNoError)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	service, err := factory(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, service.Instance)
 	assert.NotNil(t, service.Disposable)
 	assert.IsType(t, &testStructWithFields{}, service.Instance)
@@ -306,10 +330,10 @@ func TestActivateFuncFactoryForType_OnNoErrorResult(t *testing.T) {
 
 func TestActivateFuncFactoryForType_OnErrorResult(t *testing.T) {
 	factory, err := ActivateFuncFactoryForType(testFuncFactoryWithError)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	service, err := factory(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, service.Instance)
 	assert.NotNil(t, service.Disposable)
 	assert.IsType(t, &testStructWithFields{}, service.Instance)
@@ -318,7 +342,7 @@ func TestActivateFuncFactoryForType_OnErrorResult(t *testing.T) {
 
 func TestActivateFuncFactoryForType_WithFailedResult(t *testing.T) {
 	factory, err := ActivateFuncFactoryForType(testFuncFactoryWithFail)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	service, err := factory(&testStructWithFieldsProvider{})
 	assert.Equal(t, errTestFailFactory, err)
@@ -328,7 +352,7 @@ func TestActivateFuncFactoryForType_WithFailedResult(t *testing.T) {
 
 func TestActivateFuncFactoryForType_WithFailedProvider(t *testing.T) {
 	factory, err := ActivateFuncFactoryForType(testFuncFactoryWithFail)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	service, err := factory(&testStructWithFailProvider{})
 	assert.Equal(t, errTestFailProvider, err)
@@ -344,10 +368,10 @@ func TestActivateFuncSimpleFactoryForType_OnNil(t *testing.T) {
 
 func TestActivateFuncSimpleFactoryForType(t *testing.T) {
 	factory, err := ActivateFuncSimpleFactoryForType(testFuncFactoryWithError)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	service, err := factory(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, service)
 	assert.IsType(t, &testStructWithFields{}, service)
 	assert.Equal(t, &expectedStructWithFields, service)
@@ -355,7 +379,7 @@ func TestActivateFuncSimpleFactoryForType(t *testing.T) {
 
 func TestActivateFuncSimpleFactoryForType_WithFailedProvider(t *testing.T) {
 	factory, err := ActivateFuncSimpleFactoryForType(testFuncFactoryWithFail)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	service, err := factory(&testStructWithFailProvider{})
 	assert.Equal(t, errTestFailProvider, err)
@@ -370,10 +394,10 @@ func TestActivateFuncFactory_OnNil(t *testing.T) {
 
 func TestActivateFuncFactory(t *testing.T) {
 	factory, err := ActivateFuncFactory[*testStructWithFields](testFuncFactoryWithError)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	service, err := factory(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, service)
 	assert.IsType(t, &testStructWithFields{}, service)
 	assert.Equal(t, &expectedStructWithFields, service)
@@ -381,7 +405,7 @@ func TestActivateFuncFactory(t *testing.T) {
 
 func TestActivateFuncFactory_WithFailedProvider(t *testing.T) {
 	factory, err := ActivateFuncFactory[*testStructWithFields](testFuncFactoryWithFail)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, factory)
 	service, err := factory(&testStructWithFailProvider{})
 	assert.Equal(t, errTestFailProvider, err)
@@ -399,7 +423,7 @@ func TestActivateFuncForType(t *testing.T) {
 	service, err := ActivateFuncForType(
 		testFuncFactoryWithError,
 		&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, service.Instance)
 	assert.NotNil(t, service.Disposable)
 	assert.IsType(t, &testStructWithFields{}, service.Instance)
@@ -425,7 +449,7 @@ func TestActivateFuncSimple(t *testing.T) {
 	service, err := ActivateFuncSimple(
 		testFuncFactoryWithError,
 		&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, service)
 	assert.IsType(t, &testStructWithFields{}, service)
 	assert.Equal(t, &expectedStructWithFields, service)
@@ -449,7 +473,7 @@ func TestActivateFunc(t *testing.T) {
 	service, err := ActivateFunc[*testStructWithFields](
 		testFuncFactoryWithError,
 		&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, service)
 	assert.IsType(t, &testStructWithFields{}, service)
 	assert.Equal(t, &expectedStructWithFields, service)

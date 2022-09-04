@@ -113,7 +113,7 @@ func TestToSimpleFactory(t *testing.T) {
 	actualFactory := toSimpleFactory(fullFactory)
 	assert.NotNil(t, actualFactory)
 	actualInstance, err := actualFactory(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, instance, actualInstance)
 }
 
@@ -137,7 +137,7 @@ func TestToTypedFactoryOfPtr(t *testing.T) {
 	actualFactory := toTypedFactoryOfPtr[testDummyDisposable](simpleFactory)
 	assert.NotNil(t, actualFactory)
 	actualInstance, err := actualFactory(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, instance, actualInstance)
 }
 
@@ -165,7 +165,7 @@ func TestToSimpleFactoryOfPtr(t *testing.T) {
 	actualFactory := toSimpleFactoryOfPtr[testDummyDisposable](fullFactory)
 	assert.NotNil(t, actualFactory)
 	actualInstance, err := actualFactory(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, instance, actualInstance)
 }
 
@@ -208,7 +208,7 @@ func TestToSimpleFactoryOf(t *testing.T) {
 	actualFactory := toSimpleFactoryOf[Disposable](fullFactory)
 	assert.NotNil(t, actualFactory)
 	actualInstance, err := actualFactory(&testStructWithFieldsProvider{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, instance, actualInstance)
 }
 
@@ -250,7 +250,7 @@ func TestToServiceInstanceFactoryFunc_OnDisposable(t *testing.T) {
 	actualFactory := toServiceInstanceFactoryFunc(factory)
 	assert.NotNil(t, actualFactory)
 	actualInstance, err := actualFactory(provider)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, instance, actualInstance.Instance)
 	assert.Equal(t, instance, actualInstance.Disposable)
 }
@@ -265,7 +265,7 @@ func TestToServiceInstanceFactoryFunc_OnNonDisposable(t *testing.T) {
 	actualFactory := toServiceInstanceFactoryFunc(factory)
 	assert.NotNil(t, actualFactory)
 	actualInstance, err := actualFactory(provider)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, instance, actualInstance.Instance)
 	assert.NotEqual(t, instance, actualInstance.Disposable)
 	assert.NotNil(t, actualInstance.Disposable)

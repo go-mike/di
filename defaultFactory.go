@@ -123,7 +123,7 @@ func NewStructFactoryForType(structType reflect.Type) (ServiceFactory, error) {
 // returns:
 // 	the new service factory
 func NewStructFactory[T any]() (ServiceFactory, error) {
-	return NewStructFactoryForType(reflect.TypeOf((*T)(nil)).Elem())
+	return NewStructFactoryForType(typeOf[T]())
 }
 
 // NewFuncFactory creates a new service factory from the given function.

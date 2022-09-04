@@ -1,19 +1,16 @@
 package di
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
 
 func TestNewServiceCollection(t *testing.T) {
 	services := NewServiceCollection()
 	descriptors := services.ListDescriptors()
 	assert.Equal(t, []ServiceDescriptor{}, descriptors)
 }
-
 
 func TestServiceCollection_Add(t *testing.T) {
 	services := NewServiceCollection()
@@ -50,7 +47,6 @@ func TestServiceCollection_AddRange(t *testing.T) {
 	assert.Same(t, services, newServices)
 }
 
-
 func TestServiceCollection_FindDescriptors(t *testing.T) {
 	services := NewServiceCollection()
 	descriptor1, _ := NewInstance(&testStructWithFields{Field1: 1})
@@ -60,21 +56,21 @@ func TestServiceCollection_FindDescriptors(t *testing.T) {
 
 	descriptors := services.FindDescriptors(
 		func(descriptor ServiceDescriptor) bool {
-			return descriptor.ServiceType() == reflect.TypeOf(&testStructWithFields{})
+			return descriptor.ServiceType() == typeOfTestStructWithFieldsPtr
 		})
 	expectedDescriptors := []ServiceDescriptor{descriptor1, descriptor2}
 	assert.Equal(t, expectedDescriptors, descriptors)
 
 	descriptors = services.FindDescriptors(
 		func(descriptor ServiceDescriptor) bool {
-			return descriptor.ServiceType() == reflect.TypeOf(&testDummyDisposable{})
+			return descriptor.ServiceType() == typeOfTestDummyDisposablePtr
 		})
 	expectedDescriptors = []ServiceDescriptor{descriptor3}
 	assert.Equal(t, expectedDescriptors, descriptors)
 
 	descriptors = services.FindDescriptors(
 		func(descriptor ServiceDescriptor) bool {
-			return descriptor.ServiceType() == reflect.TypeOf(&testDummyNonDisposable{})
+			return descriptor.ServiceType() == typeOfTestDummyNonDisposablePtr
 		})
 	expectedDescriptors = []ServiceDescriptor{}
 	assert.Equal(t, expectedDescriptors, descriptors)
@@ -89,25 +85,24 @@ func TestServiceCollection_FindFirstDescriptor(t *testing.T) {
 
 	actualDescriptor := services.FindFirstDescriptor(
 		func(descriptor ServiceDescriptor) bool {
-			return descriptor.ServiceType() == reflect.TypeOf(&testStructWithFields{})
+			return descriptor.ServiceType() == typeOfTestStructWithFieldsPtr
 		})
 	expectedDescriptor := descriptor1
 	assert.Equal(t, expectedDescriptor, actualDescriptor)
 
 	actualDescriptor = services.FindFirstDescriptor(
 		func(descriptor ServiceDescriptor) bool {
-			return descriptor.ServiceType() == reflect.TypeOf(&testDummyDisposable{})
+			return descriptor.ServiceType() == typeOfTestDummyDisposablePtr
 		})
 	expectedDescriptor = descriptor3
 	assert.Equal(t, expectedDescriptor, actualDescriptor)
 
 	actualDescriptor = services.FindFirstDescriptor(
 		func(descriptor ServiceDescriptor) bool {
-			return descriptor.ServiceType() == reflect.TypeOf(&testDummyNonDisposable{})
+			return descriptor.ServiceType() == typeOfTestDummyNonDisposablePtr
 		})
 	assert.Nil(t, actualDescriptor)
 }
-
 
 func TestServiceCollection_FindDescriptorsForType(t *testing.T) {
 	services := NewServiceCollection()
@@ -116,15 +111,15 @@ func TestServiceCollection_FindDescriptorsForType(t *testing.T) {
 	descriptor3, _ := NewInstance(&testDummyDisposable{})
 	services.AddRange(descriptor1, descriptor2, descriptor3)
 
-	descriptors := services.FindDescriptorsForType(reflect.TypeOf(&testStructWithFields{}))
+	descriptors := services.FindDescriptorsForType(typeOfTestStructWithFieldsPtr)
 	expectedDescriptors := []ServiceDescriptor{descriptor1, descriptor2}
 	assert.Equal(t, expectedDescriptors, descriptors)
 
-	descriptors = services.FindDescriptorsForType(reflect.TypeOf(&testDummyDisposable{}))
+	descriptors = services.FindDescriptorsForType(typeOfTestDummyDisposablePtr)
 	expectedDescriptors = []ServiceDescriptor{descriptor3}
 	assert.Equal(t, expectedDescriptors, descriptors)
 
-	descriptors = services.FindDescriptorsForType(reflect.TypeOf(&testDummyNonDisposable{}))
+	descriptors = services.FindDescriptorsForType(typeOfTestDummyNonDisposablePtr)
 	expectedDescriptors = []ServiceDescriptor{}
 	assert.Equal(t, expectedDescriptors, descriptors)
 }
@@ -136,18 +131,17 @@ func TestServiceCollection_FindFirstDescriptorForType(t *testing.T) {
 	descriptor3, _ := NewInstance(&testDummyDisposable{})
 	services.AddRange(descriptor1, descriptor2, descriptor3)
 
-	actualDescriptor := services.FindFirstDescriptorForType(reflect.TypeOf(&testStructWithFields{}))
+	actualDescriptor := services.FindFirstDescriptorForType(typeOfTestStructWithFieldsPtr)
 	expectedDescriptor := descriptor1
 	assert.Equal(t, expectedDescriptor, actualDescriptor)
 
-	actualDescriptor = services.FindFirstDescriptorForType(reflect.TypeOf(&testDummyDisposable{}))
+	actualDescriptor = services.FindFirstDescriptorForType(typeOfTestDummyDisposablePtr)
 	expectedDescriptor = descriptor3
 	assert.Equal(t, expectedDescriptor, actualDescriptor)
 
-	actualDescriptor = services.FindFirstDescriptorForType(reflect.TypeOf(&testDummyNonDisposable{}))
+	actualDescriptor = services.FindFirstDescriptorForType(typeOfTestDummyNonDisposablePtr)
 	assert.Nil(t, actualDescriptor)
 }
-
 
 func TestServiceCollection_UpdateDescriptors(t *testing.T) {
 	services := NewServiceCollection()
@@ -162,39 +156,38 @@ func TestServiceCollection_UpdateDescriptors(t *testing.T) {
 
 	newServices := services.UpdateDescriptors(
 		func(descriptor ServiceDescriptor) bool {
-			return descriptor.ServiceType() == reflect.TypeOf(&testStructWithFields{})
+			return descriptor.ServiceType() == typeOfTestStructWithFieldsPtr
 		},
 		func(found []ServiceDescriptor) []ServiceDescriptor {
 			return []ServiceDescriptor{descriptor4}
 		})
-	descriptors := newServices.FindDescriptorsForType(reflect.TypeOf(&testStructWithFields{}))
+	descriptors := newServices.FindDescriptorsForType(typeOfTestStructWithFieldsPtr)
 	expectedDescriptors := []ServiceDescriptor{descriptor4}
 	assert.Equal(t, expectedDescriptors, descriptors)
 	assert.Same(t, services, newServices)
 
 	services.UpdateDescriptors(
 		func(descriptor ServiceDescriptor) bool {
-			return descriptor.ServiceType() == reflect.TypeOf(&testDummyDisposable{})
+			return descriptor.ServiceType() == typeOfTestDummyDisposablePtr
 		},
 		func(found []ServiceDescriptor) []ServiceDescriptor {
 			return []ServiceDescriptor{descriptor5, descriptor6}
 		})
-	descriptors = services.FindDescriptorsForType(reflect.TypeOf(&testDummyDisposable{}))
+	descriptors = services.FindDescriptorsForType(typeOfTestDummyDisposablePtr)
 	expectedDescriptors = []ServiceDescriptor{descriptor5, descriptor6}
 	assert.Equal(t, expectedDescriptors, descriptors)
 
 	services.UpdateDescriptors(
 		func(descriptor ServiceDescriptor) bool {
-			return descriptor.ServiceType() == reflect.TypeOf(&testDummyNonDisposable{})
+			return descriptor.ServiceType() == typeOfTestDummyNonDisposablePtr
 		},
 		func(found []ServiceDescriptor) []ServiceDescriptor {
 			return []ServiceDescriptor{descriptor7}
 		})
-	descriptors = services.FindDescriptorsForType(reflect.TypeOf(&testDummyNonDisposable{}))
+	descriptors = services.FindDescriptorsForType(typeOfTestDummyNonDisposablePtr)
 	expectedDescriptors = []ServiceDescriptor{descriptor7}
 	assert.Equal(t, expectedDescriptors, descriptors)
 }
-
 
 func TestServiceCollection_TryAdd(t *testing.T) {
 	services := NewServiceCollection()
@@ -207,15 +200,15 @@ func TestServiceCollection_TryAdd(t *testing.T) {
 
 	newServices := services.TryAdd(descriptor4)
 	assert.Same(t, services, newServices)
-	descriptors := services.FindDescriptorsForType(reflect.TypeOf(&testStructWithFields{}))
+	descriptors := services.FindDescriptorsForType(typeOfTestStructWithFieldsPtr)
 	expectedDescriptors := []ServiceDescriptor{descriptor1, descriptor2}
 	assert.Equal(t, expectedDescriptors, descriptors)
 
 	services.TryAdd(descriptor5)
-	descriptors = services.FindDescriptorsForType(reflect.TypeOf(&testDummyNonDisposable{}))
+	descriptors = services.FindDescriptorsForType(typeOfTestDummyNonDisposablePtr)
 	expectedDescriptors = []ServiceDescriptor{descriptor5}
 	assert.Equal(t, expectedDescriptors, descriptors)
-	descriptors = services.FindDescriptorsForType(reflect.TypeOf(&testDummyDisposable{}))
+	descriptors = services.FindDescriptorsForType(typeOfTestDummyDisposablePtr)
 	expectedDescriptors = []ServiceDescriptor{descriptor3}
 	assert.Equal(t, expectedDescriptors, descriptors)
 }
@@ -232,15 +225,23 @@ func TestServiceCollection_TryAddRange(t *testing.T) {
 	newServices := services.TryAddRange(descriptor4, descriptor5)
 	assert.Same(t, services, newServices)
 
-	descriptors := services.FindDescriptorsForType(reflect.TypeOf(&testStructWithFields{}))
+	descriptors := services.FindDescriptorsForType(typeOfTestStructWithFieldsPtr)
 	expectedDescriptors := []ServiceDescriptor{descriptor1, descriptor2}
 	assert.Equal(t, expectedDescriptors, descriptors)
 
-	descriptors = services.FindDescriptorsForType(reflect.TypeOf(&testDummyNonDisposable{}))
+	descriptors = services.FindDescriptorsForType(typeOfTestDummyNonDisposablePtr)
 	expectedDescriptors = []ServiceDescriptor{descriptor5}
 	assert.Equal(t, expectedDescriptors, descriptors)
 
-	descriptors = services.FindDescriptorsForType(reflect.TypeOf(&testDummyDisposable{}))
+	descriptors = services.FindDescriptorsForType(typeOfTestDummyDisposablePtr)
 	expectedDescriptors = []ServiceDescriptor{descriptor3}
 	assert.Equal(t, expectedDescriptors, descriptors)
+}
+
+func TestServiceCollection_Build(t *testing.T) {
+	services := NewServiceCollection()
+
+	scope, err := services.Build()
+	assert.NoError(t, err)
+	assert.NotNil(t, scope)
 }

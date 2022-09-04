@@ -11,6 +11,10 @@ var ErrInvalidFuncResultType = errors.New("invalid function result type")
 var ErrInvalidFuncResults = errors.New("invalid function results")
 var ErrInvalidInstance = errors.New("invalid instance")
 
+func typeOf[T any]() reflect.Type {
+	return reflect.TypeOf((*T)(nil)).Elem()
+}
+
 func ActivateStructFactoryForType(structType reflect.Type) (ServiceFactoryFunc, error) {
 	if structType == nil || structType.Kind() != reflect.Struct {
 		return nil, ErrInvalidStructType
@@ -52,7 +56,7 @@ func ActivateStructSimpleFactoryForType(structType reflect.Type) (SimpleServiceF
 }
 
 func ActivateStructFactory[T any]() (SimpleServiceFactoryFuncOfPtr[T], error) {
-	simpleFunc, err := ActivateStructSimpleFactoryForType(reflect.TypeOf((*T)(nil)).Elem())
+	simpleFunc, err := ActivateStructSimpleFactoryForType(typeOf[T]())
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +104,7 @@ func ActivateFuncFactoryForType(function any) (ServiceFactoryFunc, error) {
 		return nil, ErrInvalidFuncResults
 	}
 
-	if numResults == 2 && funcType.Out(1) != reflect.TypeOf((*error)(nil)).Elem() {
+	if numResults == 2 && funcType.Out(1) != typeOf[error]() {
 		return nil, ErrInvalidFuncResults
 	}
 

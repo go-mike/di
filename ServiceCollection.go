@@ -115,5 +115,5 @@ func (services *serviceCollection) TryAddRange(descriptors ...ServiceDescriptor)
 }
 
 func (services *serviceCollection) Build() (ServiceScope, error) {
-	panic("not implemented")
+	return newSingletonScope(slices.Clone(services.descriptors))
 }
