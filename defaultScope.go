@@ -8,11 +8,14 @@ import (
 var ErrServiceScopeDisposed = errors.New("service scope has been disposed")
 
 type defaultScope struct {
-	parent      ServiceProvider
-	lifetime    Lifetime
-	descriptors []ServiceDescriptor
-	instances   []ServiceInstance
-	isDisposed  bool
+	parent   ServiceProvider
+	lifetime Lifetime
+	data     []*descriptorData
+}
+
+type descriptorData struct {
+	descriptor ServiceDescriptor
+	instances  []ServiceInstance
 }
 
 var _ ServiceScope = (*defaultScope)(nil)
@@ -30,17 +33,19 @@ func (scope *defaultScope) Lifetime() Lifetime {
 
 // Dispose implements ServiceScope
 func (scope *defaultScope) Dispose() {
-	if !scope.isDisposed {
-		scope.isDisposed = true
-		for _, disposable := range scope.instances {
-			disposable.Disposable.Dispose()
+	if !scope.IsDisposed() {
+		for _, data := range scope.data {
+			for _, instance := range data.instances {
+				instance.Disposable.Dispose()
+			}
 		}
+		scope.data = nil
 	}
 }
 
 // IsDisposed implements ServiceScope
 func (scope *defaultScope) IsDisposed() bool {
-	return scope.isDisposed
+	return scope.data == nil
 }
 
 // GetService implements ServiceProvider
@@ -50,10 +55,34 @@ func (scope *defaultScope) GetService(serviceType reflect.Type) (any, error) {
 
 // GetServiceInfo implements ServiceProvider
 func (scope *defaultScope) GetServiceInfo(serviceType reflect.Type) ServiceInfo {
-	if scope.isDisposed {
+	if scope.IsDisposed() {
 		return newNotFoundServiceInfo(serviceType)
 	}
+
+	data := scope.findDescriptorData(serviceType)
+
+	if data != nil {
+		isInstantiated := false
+		lifetime := data.descriptor.Lifetime()
+
+		if lifetime != Transient {
+			isInstantiated = len(data.instances) > 0
+		}
+
+		return newServiceInfo(serviceType, isInstantiated, lifetime)
+	}
+
 	return newNotFoundServiceInfo(serviceType)
+}
+
+func (scope *defaultScope) findDescriptorData(serviceType reflect.Type) *descriptorData {
+	for _, data := range scope.data {
+		if data.descriptor.ServiceType() == serviceType {
+			return data
+		}
+	}
+
+	return nil
 }
 
 func newSingletonScope(descriptors []ServiceDescriptor) (*defaultScope, error) {
@@ -62,10 +91,16 @@ func newSingletonScope(descriptors []ServiceDescriptor) (*defaultScope, error) {
 		return nil, err
 	}
 
+	data := mapSlice(descriptors, func(descriptor ServiceDescriptor) *descriptorData {
+		return &descriptorData {
+			descriptor: descriptor,
+			instances:  nil,
+		}
+	})
+
 	return &defaultScope{
 		lifetime:    Singleton,
-		descriptors: descriptors,
-		instances:   []ServiceInstance{},
+		data: data,
 	}, nil
 }
 
