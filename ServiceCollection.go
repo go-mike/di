@@ -29,7 +29,7 @@ type ServiceCollection interface {
 
 	// TODO: Decorate
 
-	Build() (ServiceScope, error)
+	Build() (ServiceContainer, error)
 }
 
 // ServiceCollection is a collection of services, describing a dependency graph of services.
@@ -114,6 +114,14 @@ func (services *serviceCollection) TryAddRange(descriptors ...ServiceDescriptor)
 	return services
 }
 
-func (services *serviceCollection) Build() (ServiceScope, error) {
-	return newSingletonScope(slices.Clone(services.descriptors))
+func (services *serviceCollection) Build() (ServiceContainer, error) {
+	describer, err := newDefaultDescriber(services.descriptors)
+	if err != nil {
+		return nil, err
+	}
+	return newDefaultContainer(
+		describer,
+		slices.Clone(services.descriptors),
+		nil,
+	)
 }

@@ -1,8 +1,8 @@
 package di
 
-type ServiceScope interface {
+type ServiceContainer interface {
 	Provider() ServiceProvider
-	Lifetime() Lifetime
+	IsScoped() bool
 	Dispose()
 	IsDisposed() bool
 }

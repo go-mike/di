@@ -9,22 +9,26 @@ type ServiceProvider interface {
 
 type ServiceInfo struct {
 	ServiceType    reflect.Type
-	IsInstantiated bool
 	Lifetime       Lifetime
+	IsInstantiated bool
+}
+
+func (info ServiceInfo) IsNotFound() bool {
+	return info.Lifetime == UnknownLifetime
 }
 
 func newNotFoundServiceInfo(serviceType reflect.Type) ServiceInfo {
 	return ServiceInfo{
 		ServiceType:    serviceType,
-		IsInstantiated: false,
 		Lifetime:       UnknownLifetime,
+		IsInstantiated: false,
 	}
 }
 
 func newServiceInfo(serviceType reflect.Type, instantiated bool, lifetime Lifetime) ServiceInfo {
 	return ServiceInfo{
 		ServiceType:    serviceType,
-		IsInstantiated: instantiated,
 		Lifetime:       lifetime,
+		IsInstantiated: instantiated,
 	}
 }
