@@ -114,7 +114,7 @@ func newDefaultContainer(
 	}
 
 	return &defaultContainer{
-		data:   make([]*descriptorData, 0),
+		data:   nil,
 		parent: parent,
 	}, nil
 }

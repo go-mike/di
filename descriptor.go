@@ -89,6 +89,11 @@ func NewSingletonStruct[T any, Impl any]() (ServiceDescriptor, error) {
 	return NewSingletonServiceFactory[T](factory), nil
 }
 
+// NewSingletonStructPtr creates a new singleton service descriptor for the given service type.
+func NewSingletonStructPtr[Impl any]() (ServiceDescriptor, error) {
+	return NewSingletonStruct[*Impl, Impl]()
+}
+
 
 // NewScopedServiceFactoryForType creates a new singleton service descriptor for the given service type.
 func NewScopedServiceFactoryForType(serviceType reflect.Type, factory ServiceFactory) ServiceDescriptor {
@@ -131,6 +136,11 @@ func NewScopedStruct[T any, Impl any]() (ServiceDescriptor, error) {
 	return NewScopedServiceFactory[T](factory), nil
 }
 
+// NewScopedStructPtr creates a new scoped service descriptor for the given service type.
+func NewScopedStructPtr[Impl any]() (ServiceDescriptor, error) {
+	return NewScopedStruct[*Impl, Impl]()
+}
+
 
 // NewTransientServiceFactoryForType creates a new singleton service descriptor for the given service type.
 func NewTransientServiceFactoryForType(serviceType reflect.Type, factory ServiceFactory) ServiceDescriptor {
@@ -171,6 +181,11 @@ func NewTransientStruct[T any, Impl any]() (ServiceDescriptor, error) {
 		return nil, err
 	}
 	return NewTransientServiceFactory[T](factory), nil
+}
+
+// NewTransientStructPtr creates a new transient service descriptor for the given service type.
+func NewTransientStructPtr[Impl any]() (ServiceDescriptor, error) {
+	return NewTransientStruct[*Impl, Impl]()
 }
 
 // NewInstanceForType creates a new singleton service descriptor for the given service instance.

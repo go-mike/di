@@ -6,6 +6,8 @@ Dependency Injection Abstractions and default implementation
 
 - **Service Interface**: Represents a type that serves as a key to request a service to a service provider, and as a way to interact with the service.
 - **Service Implementation**: Represents a type that implements a service interface.
+- **Dependency**: Is a relationship between a service implementation and a service interface, where the former requires an instance of the latter to be able to function.
+- **Dependency Injection**: Is the process of providing a service implementation with the required dependencies.
 - **Service Lifetime**: Represents the lifetime of a service.
   - *Singleton Lifetime*: The service is instantiated once and shared across all requests.
   - *Scoped Lifetime*: The service is instantiated once per scope.
@@ -17,6 +19,18 @@ Dependency Injection Abstractions and default implementation
 - **Service Describer**: Is an immutable collection of service descriptors, used internally by the service provider to resolve services.
 - **Service Container**: Is a container of services, which can be used to resolve services, and manage their lifetime.
 - **Service Provider**: Is a type to access the services available in an application.
+- **Activator**: Is a type to help create instances of services with dependencies from a service provider.
+
+## Where are services resolved from
+
+| When a service | Is requested from a container | Then                                              |
+| -------------- | ----------------------------- | ------------------------------------------------- |
+| Singleton      | Root Container                | The service is resolved from current container    |
+| Singleton      | Scoped Container              | The service is resolved from the parent container |
+| Scoped         | Root Container                | The request fails                                 |
+| Scoped         | Scoped Container              | The service is resolved from current container    |
+| Transient      | Root Container                | The service is resolved from current container    |
+| Transient      | Scoped Container              | The service is resolved from current container    |
 
 ## Table of service possible dependencies
 
@@ -31,4 +45,3 @@ Dependency Injection Abstractions and default implementation
 | Transient     | Singleton         | ✅         |
 | Transient     | Scoped            | if scoped |
 | Transient     | Transient         | ✅         |
-

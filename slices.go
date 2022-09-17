@@ -8,6 +8,12 @@ func mapSlice[T any, R any] (source []T, mapper func (T) R) []R {
 	return results
 }
 
+func cloneSlice[T any](source []T) []T {
+	results := make([]T, len(source))
+	copy(results, source)
+	return results
+}
+
 func flattenSlice[T any] (source [][]T) []T {
 	results := make([]T, 0)
 	for _, item := range source {
