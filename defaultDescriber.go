@@ -76,81 +76,187 @@ func (err *ServiceDependencyError) Error() string {
 	return sb.String()
 }
 
-func validateDescriptors(descriptors []ServiceDescriptor) error {
-	var es []error
+type validatedDescriptor struct {
+	descriptor            ServiceDescriptor
+	validatedForRecurse   bool
+	validatedForSingleton bool
+	validatedForScoped    bool
+}
 
-	for _, descriptor := range descriptors {
-		requirements := descriptor.Factory().Requirements()
-		for _, requirement := range requirements {
-			reqErrors := validateRequirement(
-				descriptor.Factory().DisplayName(),
-				descriptor.Lifetime(),
-				requirement,
-				descriptors)
-			es = append(es, reqErrors...)
-		}
-	}
+func validateDescriptors(
+	descriptors []ServiceDescriptor,
+) error {
+	validations := mapSlice(
+		descriptors,
+		func(descriptor ServiceDescriptor) *validatedDescriptor {
+			return &validatedDescriptor{
+				descriptor: descriptor,
+			}
+		},
+	)
 
-	if len(es) > 0 {
-		return &ServiceDependencyError{Errors: es}
+	messages := validateDescriptorsAux(validations)
+
+	if len(messages) > 0 {
+		messages = distinctSlice(messages)
+		errs := mapSlice(messages, func(s string) error { return errors.New(s) })
+		return &ServiceDependencyError{Errors: errs}
 	}
 
 	return nil
 }
 
-func validateRequirement(
-	service string,
-	lifetime Lifetime,
-	requirement reflect.Type,
-	descriptors []ServiceDescriptor,
-) []error {
-	var es []error
+func validateDescriptorsAux(
+	validations []*validatedDescriptor,
+) []string {
+	var messages []string
 
-	if requirement.Kind() == reflect.Slice {
-		dependencies := searchDescriptors(descriptors, requirement.Elem())
-
-		if len(dependencies) == 0 {
-			return nil
-		}
-
-		for _, dependency := range dependencies {
-			reqErrors := validateRequirementDescriptor(
-				service, lifetime, dependency, descriptors)
-			es = append(es, reqErrors...)
-		}
-	} else {
-
-		dependency := searchDescriptor(descriptors, requirement)
-
-		if dependency == nil {
-			es = append(es, fmt.Errorf(
-				"service %s requires %s but it is not found",
-				service, requirement))
-		} else {
-			reqErrors := validateRequirementDescriptor(
-				service, lifetime, dependency, descriptors)
-			es = append(es, reqErrors...)
+	validate := func(recurse bool) {
+		for _, validation := range validations {
+			requestChain := []ServiceDescriptor{validation.descriptor}
+			moreErrors := validateDescriptor(
+				validation.descriptor.Lifetime(),
+				requestChain,
+				validation,
+				validations,
+				recurse,
+			)
+			messages = append(messages, moreErrors...)
 		}
 	}
 
-	return es
+	validate(false)
+	validate(true)
+
+	return messages
 }
 
-func validateRequirementDescriptor(
-	service string,
+func validateDescriptor(
 	lifetime Lifetime,
-	requirementDescriptor ServiceDescriptor,
-	descriptors []ServiceDescriptor,
-) []error {
-	var es []error
+	requestChain []ServiceDescriptor,
+	validation *validatedDescriptor,
+	validations []*validatedDescriptor,
+	recurse bool,
+) []string {
+	if lifetime == Scoped {
+		if validation.validatedForScoped && validation.validatedForRecurse == recurse {
+			return nil
+		}
+		validation.validatedForScoped = true
+		validation.validatedForRecurse = recurse
+	}
 
-	if lifetime == Singleton {
-		if requirementDescriptor.Lifetime() == Scoped {
-			es = append(es, fmt.Errorf(
-				"singleton service %s cannot request scoped service %s",
-				service, requirementDescriptor.ServiceType()))
+	if lifetime != Scoped {
+		if validation.validatedForSingleton && validation.validatedForRecurse == recurse {
+			return nil
+		}
+		validation.validatedForSingleton = true
+		validation.validatedForRecurse = recurse
+	}
+
+	var messages []string
+
+	requirements := validation.descriptor.Factory().Requirements()
+
+	for _, requirement := range requirements {
+		if requirement.Kind() == reflect.Slice {
+			for _, current := range validations {
+				if current.descriptor.ServiceType() == requirement.Elem() {
+					// Validate the requirement
+					messages = append(
+						messages,
+						validateRequirement(
+							lifetime,
+							current.descriptor,
+							requestChain)...)
+					// Validate the requirement's requirements from the current lifetime
+					if recurse {
+						messages = append(
+							messages,
+							validateDescriptor(
+								lifetime,
+								append(requestChain, current.descriptor),
+								current,
+								validations,
+								recurse)...)
+					}
+				}
+			}
+		} else {
+			for i := len(validations) - 1; i >= 0; i-- {
+				current := validations[i]
+				if current.descriptor.ServiceType() == requirement {
+					// Validate the requirement
+					messages = append(
+						messages,
+						validateRequirement(
+							lifetime,
+							current.descriptor,
+							requestChain)...)
+					// Validate the requirement's requirements from the current lifetime
+					if recurse {
+						messages = append(
+							messages,
+							validateDescriptor(
+								lifetime,
+								append(requestChain, current.descriptor),
+								current,
+								validations,
+								recurse)...)
+					}
+					return messages
+				}
+			}
+
+			messages = append(
+				messages,
+				fmt.Sprintf(
+					"service request %s =(not found)=> %s fails",
+					requestChainString(requestChain),
+					requirement))
 		}
 	}
 
-	return es
+	return messages
+}
+
+func validateRequirement(
+	lifetime Lifetime,
+	requirementDescriptor ServiceDescriptor,
+	requestChain []ServiceDescriptor,
+) []string {
+	var messages []string
+
+	if !isValidRequirement(lifetime, requirementDescriptor) {
+		messages = append(
+			messages,
+			fmt.Sprintf(
+				"service request %s =(invalid)=> %s fails",
+				requestChainString(requestChain),
+				requirementDescriptor))
+	}
+
+	return messages
+}
+
+func isValidRequirement(
+	lifetime Lifetime,
+	requirementDescriptor ServiceDescriptor,
+) bool {
+	if lifetime == Singleton && requirementDescriptor.Lifetime() == Scoped {
+		return false
+	}
+
+	return true
+}
+
+func requestChainString(requestChain []ServiceDescriptor) string {
+	var sb strings.Builder
+	for i, descriptor := range requestChain {
+		sb.WriteString(descriptor.String())
+		if i < len(requestChain)-1 {
+			sb.WriteString(" ==> ")
+		}
+	}
+	return sb.String()
 }

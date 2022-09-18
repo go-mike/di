@@ -103,3 +103,17 @@ func rangeMapSlice[T any](start int, count int, mapper func (int) T) []T {
 	}
 	return results
 }
+
+func distinctBySlice[T any](source []T, comparer func (T, T) bool) []T {
+	results := make([]T, 0)
+	for _, item := range source {
+		if findSlice(results, func (other T) bool { return comparer(item, other) }) == nil {
+			results = append(results, item)
+		}
+	}
+	return results
+}
+
+func distinctSlice[T comparable](source []T) []T {
+	return distinctBySlice(source, func (a, b T) bool { return a == b })
+}

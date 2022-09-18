@@ -1,12 +1,17 @@
 package di
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 type descriptor struct {
 	serviceType reflect.Type
 	lifetime    Lifetime
 	factory     ServiceFactory
 }
+
+var _ ServiceDescriptor = (*descriptor)(nil)
 
 // ServiceDescriptor implementation for descriptor
 
@@ -23,6 +28,14 @@ func (desc *descriptor) Lifetime() Lifetime {
 // ServiceType implements ServiceDescriptor.ServiceType to return the service type.
 func (desc *descriptor) ServiceType() reflect.Type {
 	return desc.serviceType
+}
+
+// String implements ServiceDescriptor.String to return the string representation of the service descriptor.
+func (desc *descriptor) String() string {
+	return fmt.Sprintf(
+		"[%s] %s",
+		desc.lifetime,
+		desc.serviceType)
 }
 
 // Factories for descriptor as a ServiceDescriptor
@@ -46,7 +59,6 @@ func NewDescriptorForType(serviceType reflect.Type, lifetime Lifetime, factory S
 func NewDescriptor[T any](lifetime Lifetime, factory ServiceFactory) ServiceDescriptor {
 	return NewDescriptorForType(typeOf[T](), lifetime, factory)
 }
-
 
 // NewSingletonServiceFactoryForType creates a new singleton service descriptor for the given service type.
 func NewSingletonServiceFactoryForType(serviceType reflect.Type, factory ServiceFactory) ServiceDescriptor {
@@ -94,7 +106,6 @@ func NewSingletonStructPtr[Impl any]() (ServiceDescriptor, error) {
 	return NewSingletonStruct[*Impl, Impl]()
 }
 
-
 // NewScopedServiceFactoryForType creates a new singleton service descriptor for the given service type.
 func NewScopedServiceFactoryForType(serviceType reflect.Type, factory ServiceFactory) ServiceDescriptor {
 	return NewDescriptorForType(serviceType, Scoped, factory)
@@ -140,7 +151,6 @@ func NewScopedStruct[T any, Impl any]() (ServiceDescriptor, error) {
 func NewScopedStructPtr[Impl any]() (ServiceDescriptor, error) {
 	return NewScopedStruct[*Impl, Impl]()
 }
-
 
 // NewTransientServiceFactoryForType creates a new singleton service descriptor for the given service type.
 func NewTransientServiceFactoryForType(serviceType reflect.Type, factory ServiceFactory) ServiceDescriptor {

@@ -33,6 +33,10 @@ type testStructWithDependency struct {
 	Dependency testServiceInterface
 }
 
+type testStructWithOtherDependency struct {
+	Dependency *testStructWithDependency
+}
+
 func TestNewDefaultDescriber_WithMissingDependency(t *testing.T) {
 	descriptor, _ := NewSingletonStructPtr[testStructWithDependency]()
 	descriptors := []ServiceDescriptor{descriptor}
@@ -40,13 +44,15 @@ func TestNewDefaultDescriber_WithMissingDependency(t *testing.T) {
 	describer, err := newDefaultDescriber(descriptors)
 	assert.Nil(t, describer)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "testStructWithDependency")
-	assert.Contains(t, err.Error(), "testServiceInterface")
-	assert.Contains(t, err.Error(), "is not found")
+	assert.Contains(t, err.Error(), "[Singleton] *di.testStructWithDependency =(not found)=> di.testServiceInterface")
 }
 
 type testStructWithDependencySlice struct {
 	Dependency []testServiceInterface
+}
+
+type testStructWithOtherDependencySlice struct {
+	Dependency []*testStructWithDependencySlice
 }
 
 func TestNewDefaultDescriber_WithMissingDependencies(t *testing.T) {
@@ -86,9 +92,7 @@ func TestNewDefaultDescriber_SingletonToScoped(t *testing.T) {
 	describer, err := newDefaultDescriber(descriptors)
 	assert.Nil(t, describer)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "singleton service testStructWithDependency")
-	assert.Contains(t, err.Error(), "cannot request")
-	assert.Contains(t, err.Error(), "scoped service di.testServiceInterface")
+	assert.Contains(t, err.Error(), "[Singleton] *di.testStructWithDependency =(invalid)=> [Scoped] di.testServiceInterface")
 }
 
 func TestNewDefaultDescriber_SingletonToScopedSlice(t *testing.T) {
@@ -99,9 +103,7 @@ func TestNewDefaultDescriber_SingletonToScopedSlice(t *testing.T) {
 	describer, err := newDefaultDescriber(descriptors)
 	assert.Nil(t, describer)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "singleton service testStructWithDependency")
-	assert.Contains(t, err.Error(), "cannot request")
-	assert.Contains(t, err.Error(), "scoped service di.testServiceInterface")
+	assert.Contains(t, err.Error(), "[Singleton] *di.testStructWithDependencySlice =(invalid)=> [Scoped] di.testServiceInterface")
 }
 
 func TestNewDefaultDescriber_SingletonToTransient(t *testing.T) {
@@ -242,4 +244,30 @@ func TestNewDefaultDescriber_TransientToTransientSlice(t *testing.T) {
 	describer, err := newDefaultDescriber(descriptors)
 	assert.NoError(t, err)
 	assert.NotNil(t, describer)
+}
+
+func TestNewDefaultDescriber_SingletonToTransientToScoped(t *testing.T) {
+	descriptor1, _ := NewSingletonStructPtr[testStructWithOtherDependency]()
+	descriptor2, _ := NewTransientStructPtr[testStructWithDependency]()
+	descriptor3, _ := NewScopedStruct[testServiceInterface, testServiceStruct]()
+	descriptors := []ServiceDescriptor{descriptor1, descriptor2, descriptor3}
+
+	describer, err := newDefaultDescriber(descriptors)
+	assert.Nil(t, describer)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), 
+		"[Singleton] *di.testStructWithOtherDependency ==> [Transient] *di.testStructWithDependency =(invalid)=> [Scoped] di.testServiceInterface")
+}
+
+func TestNewDefaultDescriber_SingletonToTransientToScopedSlice(t *testing.T) {
+	descriptor1, _ := NewSingletonStructPtr[testStructWithOtherDependencySlice]()
+	descriptor2, _ := NewTransientStructPtr[testStructWithDependencySlice]()
+	descriptor3, _ := NewScopedStruct[testServiceInterface, testServiceStruct]()
+	descriptors := []ServiceDescriptor{descriptor1, descriptor2, descriptor3}
+
+	describer, err := newDefaultDescriber(descriptors)
+	assert.Nil(t, describer)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(),
+		"[Singleton] *di.testStructWithOtherDependencySlice ==> [Transient] *di.testStructWithDependencySlice =(invalid)=> [Scoped] di.testServiceInterface")
 }
